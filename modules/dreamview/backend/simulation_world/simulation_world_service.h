@@ -28,9 +28,6 @@
 #include <utility>
 #include <vector>
 
-#include "boost/thread/locks.hpp"
-#include "boost/thread/shared_mutex.hpp"
-
 #include "cyber/common/log.h"
 
 #include "gtest/gtest_prod.h"
@@ -311,7 +308,6 @@ class SimulationWorldService {
   SimulationWorld world_;
 
   // Downsampled route paths to be rendered in frontend.
-  boost::shared_mutex route_paths_mutex_;
   std::vector<RoutePath> route_paths_;
 
   // The handle of MapService, not owned by SimulationWorldService.
