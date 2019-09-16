@@ -633,8 +633,53 @@ void LexusController::SecurityDogThreadFunc() {
 }
 
 bool LexusController::CheckResponse(const int32_t flags, bool need_wait) {
-  /* ADD YOUR OWN CAR CHASSIS OPERATION
-   */
+  // for Lexus, we assume CheckResponse will take 300ms. We leave a 100ms buffer
+  // for it.
+  // TODO(Yu) : check whether the current retry_num match the assumed time
+  // consumption
+  int32_t retry_num = 20;
+  ChassisDetail chassis_detail;
+  bool is_accel_enabled = false;
+  bool is_brake_enabled = false;
+  bool is_steering_enabled = false;
+
+  do {
+    if (message_manager_->GetSensorData(&chassis_detail) != ErrorCode::OK) {
+      AERROR_EVERY(100) << "Get chassis detail failed.";
+      return false;
+    }
+    bool check_ok = true;
+    if (flags & CHECK_RESPONSE_STEER_UNIT_FLAG) {
+      is_steering_enabled =
+          chassis_detail.lexus().has_steering_rpt_22c() &&
+          chassis_detail.lexus().steering_rpt_22c().has_enabled() &&
+          chassis_detail.lexus().steering_rpt_22c().enabled();
+      check_ok = check_ok && is_steering_enabled;
+    }
+
+    if (flags & CHECK_RESPONSE_SPEED_UNIT_FLAG) {
+      is_brake_enabled = chassis_detail.lexus().has_brake_rpt_204() &&
+                         chassis_detail.lexus().brake_rpt_204().has_enabled() &&
+                         chassis_detail.lexus().brake_rpt_204().enabled();
+      is_accel_enabled = chassis_detail.lexus().has_accel_rpt_200() &&
+                         chassis_detail.lexus().accel_rpt_200().has_enabled() &&
+                         chassis_detail.lexus().accel_rpt_200().enabled();
+      check_ok = check_ok && is_brake_enabled && is_accel_enabled;
+    }
+    if (check_ok) {
+      return true;
+    }
+    if (need_wait) {
+      --retry_num;
+      std::this_thread::sleep_for(
+          std::chrono::duration<double, std::milli>(20));
+    }
+  } while (need_wait && retry_num);
+
+  // If check_response fails, then report the specific module failure online
+  AERROR << "check_response fail: is_steering_enabled:" << is_steering_enabled
+         << ", is_brake_enabled:" << is_brake_enabled
+         << ", is_accel_enabled:" << is_accel_enabled;
   return false;
 }
 

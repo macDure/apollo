@@ -20,13 +20,15 @@
 
 #pragma once
 
+#include <utility>
 #include <vector>
 
-#include "modules/planning/tasks/deciders/decider.h"
-
+#include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/planning/common/history.h"
+#include "modules/planning/common/obstacle_blocking_analyzer.h"
 #include "modules/planning/proto/decider_config.pb.h"
 #include "modules/planning/proto/planning_config.pb.h"
+#include "modules/planning/tasks/deciders/decider.h"
 
 namespace apollo {
 namespace planning {
@@ -38,14 +40,40 @@ class PathReuseDecider : public Decider {
  private:
   common::Status Process(Frame* frame,
                          ReferenceLineInfo* reference_line_info) override;
-  bool CheckPathReusable(Frame* frame);
+
+  // check if previous path reusable
+  bool CheckPathReusable(Frame* frame, ReferenceLineInfo* reference_line_info);
+
   void GetCurrentStopPositions(
       Frame* frame,
       std::vector<const common::PointENU*>* current_stop_positions);
+
+  // get current s_projection of history objects which has stop decisions
   void GetHistoryStopPositions(
+      ReferenceLineInfo* const reference_line_info,
       const std::vector<const HistoryObjectDecision*>&
           history_objects_decisions,
-      std::vector<const common::PointENU*>* history_stop_positions);
+      std::vector<std::pair<const double, const common::PointENU>>*
+          history_stop_positions);
+
+  // get current s_projection of current virtual obstacles
+  void GetCurrentStopObstacleS(ReferenceLineInfo* const reference_line_info,
+                               std::vector<double>* current_stop_obstacle);
+
+  void GetHistoryStopSPosition(ReferenceLineInfo* const reference_line_info,
+                               const std::vector<const HistoryObjectDecision*>&
+                                   history_objects_decisions,
+                               std::vector<double>* history_stop_positions);
+
+  // compared stop decision in s-direction
+  bool SameStopS(const double history_stop_s, const double current_stop_s);
+
+  // check if the nearest Stop obstacle in history is same as current
+  bool IsSameStopObstacles(Frame* const frame,
+                           ReferenceLineInfo* const reference_line_info);
+
+  // check if same obstacles();
+  bool IsSameObstacles(ReferenceLineInfo* const reference_line_info);
 
  private:
   History* history_ = History::Instance();
