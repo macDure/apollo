@@ -35,7 +35,7 @@ using apollo::cyber::event::PerfEventCache;
 using apollo::cyber::event::SchedPerf;
 
 std::shared_ptr<CRoutine> ChoreographyContext::NextRoutine() {
-  if (unlikely(stop_.load())) {
+  if (cyber_unlikely(stop_.load())) {
     return nullptr;
   }
 
@@ -80,6 +80,9 @@ void ChoreographyContext::Wait() {
 
 void ChoreographyContext::Shutdown() {
   stop_.store(true);
+  mtx_wq_.lock();
+  notify = SHRT_MAX;
+  mtx_wq_.unlock();
   cv_wq_.notify_all();
 }
 

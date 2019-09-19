@@ -52,7 +52,7 @@ void ClassicContext::InitGroup(const std::string& group_name) {
 }
 
 std::shared_ptr<CRoutine> ClassicContext::NextRoutine() {
-  if (unlikely(stop_.load())) {
+  if (cyber_unlikely(stop_.load())) {
     return nullptr;
   }
 
@@ -68,6 +68,7 @@ std::shared_ptr<CRoutine> ClassicContext::NextRoutine() {
                                                   cr->processor_id());
         return cr;
       }
+
       cr->Release();
     }
   }
@@ -86,6 +87,9 @@ void ClassicContext::Wait() {
 
 void ClassicContext::Shutdown() {
   stop_.store(true);
+  mtx_wrapper_->Mutex().lock();
+  notify_grp_[current_grp] = SHRT_MAX;
+  mtx_wrapper_->Mutex().unlock();
   cw_->Cv().notify_all();
 }
 
