@@ -6,11 +6,9 @@ import SplitPane from 'react-split-pane';
 import Header from "components/Header";
 import MainView from "components/Layouts/MainView";
 import ToolView from "components/Layouts/ToolView";
-import PNCMonitor from "components/PNCMonitor";
-import DataCollectionMonitor from "components/DataCollectionMonitor";
+import MonitorPanel from "components/Layouts/MonitorPanel";
 import SideBar from "components/SideBar";
 import AudioCapture from "components/AudioCapture";
-import { CameraVideo } from "components/Tasks/SensorCamera";
 
 import HOTKEYS_CONFIG from "store/config/hotkeys.yml";
 import WS, { MAP_WS, POINT_CLOUD_WS, CAMERA_WS } from "store/websocket";
@@ -70,7 +68,7 @@ export default class Dreamview extends React.Component {
     }
 
     render() {
-        const { isInitialized, dimension, sceneDimension, options, hmi } = this.props.store;
+        const { dimension, options, hmi } = this.props.store;
 
         return (
             <div>
@@ -87,21 +85,10 @@ export default class Dreamview extends React.Component {
                                 <ToolView />
                             </div>
                         </div>
-                        <div className="right-pane">
-                            {options.showPNCMonitor && options.showVideo &&
-                                <div>
-                                    <Tab><span>Camera View</span></Tab>
-                                    <CameraVideo />
-                                </div>
-                            }
-                            {options.showPNCMonitor && <PNCMonitor options={options} />}
-                            {options.showDataCollectionMonitor &&
-                                <DataCollectionMonitor
-                                    dataCollectionUpdateStatus={hmi.dataCollectionUpdateStatus}
-                                    dataCollectionProgress={hmi.dataCollectionProgress}
-                                />
-                            }
-                        </div>
+                        <MonitorPanel
+                            hmi={hmi}
+                            viewName={options.monitorName}
+                            showVideo={options.showVideo} />
                     </SplitPane>
                 </div>
                 <div className="hidden">

@@ -13,4 +13,7 @@ message CameraUpdate {
 
     // Camera image data
     optional bytes image = 3;
+
+    // Camera image aspect ratio = width / height
+    optional double image_aspect_ratio = 4;
 }

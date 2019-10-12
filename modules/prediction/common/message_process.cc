@@ -51,17 +51,19 @@ using cyber::record::RecordMessage;
 using cyber::record::RecordReader;
 
 bool MessageProcess::Init() {
-  // Load prediction conf
-  PredictionConf prediction_conf;
-  if (!cyber::common::GetProtoFromFile(FLAGS_prediction_conf_file,
-                                       &prediction_conf)) {
-    AERROR << "Unable to load prediction conf file: "
-           << FLAGS_prediction_conf_file;
+  InitContainers();
+  InitEvaluators();
+  InitPredictors();
+
+  if (!FLAGS_use_navigation_mode && !PredictionMap::Ready()) {
+    AERROR << "Map cannot be loaded.";
     return false;
   }
-  ADEBUG << "Prediction config file is loaded into: "
-         << prediction_conf.ShortDebugString();
 
+  return true;
+}
+
+bool MessageProcess::InitContainers() {
   common::adapter::AdapterManagerConfig adapter_conf;
   if (!cyber::common::GetProtoFromFile(FLAGS_prediction_adapter_config_filename,
                                        &adapter_conf)) {
@@ -72,22 +74,42 @@ bool MessageProcess::Init() {
   ADEBUG << "Adapter config file is loaded into: "
          << adapter_conf.ShortDebugString();
 
-  // Initialization of all managers
   ContainerManager::Instance()->Init(adapter_conf);
-  EvaluatorManager::Instance()->Init(prediction_conf);
-  PredictorManager::Instance()->Init(prediction_conf);
-
-  if (!FLAGS_use_navigation_mode && !PredictionMap::Ready()) {
-    AERROR << "Map cannot be loaded.";
-    return false;
-  }
-
   return true;
 }
 
-void MessageProcess::OnPerception(
-    const perception::PerceptionObstacles& perception_obstacles,
-    PredictionObstacles* const prediction_obstacles) {
+bool MessageProcess::InitEvaluators() {
+  PredictionConf prediction_conf;
+  if (!cyber::common::GetProtoFromFile(FLAGS_prediction_conf_file,
+                                       &prediction_conf)) {
+    AERROR << "Unable to load prediction conf file: "
+           << FLAGS_prediction_conf_file;
+    return false;
+  }
+  ADEBUG << "Prediction config file is loaded into: "
+         << prediction_conf.ShortDebugString();
+
+  EvaluatorManager::Instance()->Init(prediction_conf);
+  return true;
+}
+
+bool MessageProcess::InitPredictors() {
+  PredictionConf prediction_conf;
+  if (!cyber::common::GetProtoFromFile(FLAGS_prediction_conf_file,
+                                       &prediction_conf)) {
+    AERROR << "Unable to load prediction conf file: "
+           << FLAGS_prediction_conf_file;
+    return false;
+  }
+  ADEBUG << "Prediction config file is loaded into: "
+         << prediction_conf.ShortDebugString();
+
+  PredictorManager::Instance()->Init(prediction_conf);
+  return true;
+}
+
+void MessageProcess::ContainerProcess(
+    const perception::PerceptionObstacles& perception_obstacles) {
   ADEBUG << "Received a perception message ["
          << perception_obstacles.ShortDebugString() << "].";
 
@@ -134,6 +156,18 @@ void MessageProcess::OnPerception(
 
   // Insert perception_obstacles
   ptr_obstacles_container->Insert(perception_obstacles);
+}
+
+void MessageProcess::OnPerception(
+    const perception::PerceptionObstacles& perception_obstacles,
+    PredictionObstacles* const prediction_obstacles) {
+
+  ContainerProcess(perception_obstacles);
+
+  auto ptr_obstacles_container =
+      ContainerManager::Instance()->GetContainer<ObstaclesContainer>(
+          AdapterConfig::PERCEPTION_OBSTACLES);
+  CHECK_NOTNULL(ptr_obstacles_container);
 
   // Ignore some obstacles
   ObstaclesPrioritizer::Instance()->AssignIgnoreLevel();

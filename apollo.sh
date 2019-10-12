@@ -20,6 +20,8 @@
 #                   Utils
 #=================================================
 
+DISABLED_CYBER_MODULES="except //cyber/record:record_file_integration_test"
+
 function source_apollo_base() {
   DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   cd "${DIR}"
@@ -92,13 +94,13 @@ function check_esd_files() {
 }
 
 function generate_build_targets() {
-  COMMON_TARGETS="//cyber/... union //modules/common/kv_db/... union //modules/dreamview/..."
+  COMMON_TARGETS="//cyber/... union //modules/common/kv_db/... union //modules/dreamview/... $DISABLED_CYBER_MODULES"
   case $BUILD_FILTER in
   cyber)
-    BUILD_TARGETS=`bazel query //cyber/...`
+    BUILD_TARGETS=`bazel query //cyber/... union //modules/tools/visualizer/...`
     ;;
   drivers)
-    BUILD_TARGETS=`bazel query //cyber/... union //modules/drivers/... except //modules/drivers/tools/... except //modules/drivers/canbus/... except //modules/drivers/video/...`
+    BUILD_TARGETS=`bazel query //cyber/... union //modules/tools/visualizer/... union //modules/drivers/... except //modules/drivers/tools/... except //modules/drivers/canbus/... except //modules/drivers/video/...`
     ;;
   control)
     BUILD_TARGETS=`bazel query $COMMON_TARGETS union //modules/control/... `
@@ -118,8 +120,7 @@ function generate_build_targets() {
   *)
 #    BUILD_TARGETS=`bazel query //modules/... union //cyber/...`
     # FIXME(all): temporarily disable modules doesn't compile in 18.04
-    BUILD_TARGETS=`bazel query //modules/... union //cyber/... except //modules/tools/visualizer/... except //modules/data/tools/rosbag_to_record/...  except //modules/v2x/... except //modules/map/tools/map_datachecker/... `
-
+    BUILD_TARGETS=`bazel query //modules/... union //cyber/... except //modules/tools/visualizer/... except //modules/data/tools/rosbag_to_record/...  except //modules/v2x/... except //modules/map/tools/map_datachecker/... $DISABLE_CYBER_MODULES`
   esac
 
   if [ $? -ne 0 ]; then
@@ -343,7 +344,7 @@ function release() {
   cd -
 
   # setup cyber binaries and convert from //path:target to path/target
-  CYBERBIN=$(bazel query "kind(cc_binary, //...)" | sed 's/^\/\///' | sed 's/:/\//' | sed '/.*.so$/d')
+  CYBERBIN=$(bazel query "kind(cc_binary, //cyber/... //modules/tools/visualizer/...)" | sed 's/^\/\///' | sed 's/:/\//' | sed '/.*.so$/d')
   for BIN in ${CYBERBIN}; do
     cp -P --parent "bazel-bin/${BIN}" ${APOLLO_RELEASE_DIR}
   done
@@ -539,7 +540,7 @@ function citest_extended() {
   source cyber/setup.bash
 
   BUILD_TARGETS="
-    `bazel query //modules/planning/... union //modules/common/... union //cyber/...`
+    `bazel query //modules/planning/... union //modules/common/... union //cyber/... $DISABLED_CYBER_MODULES`
     `bazel query //modules/prediction/... union //modules/control/...`
   "
 
@@ -830,6 +831,11 @@ function main() {
     build_opt_gpu)
       set_use_gpu
       DEFINES="${DEFINES} --copt=-fpic"
+      apollo_build_opt $@
+      ;;
+    build_teleop)
+      set_use_gpu
+      DEFINES="${DEFINES} --copt=-fpic --define WITH_TELEOP=1 --cxxopt=-DTELEOP"
       apollo_build_opt $@
       ;;
     build_fe)

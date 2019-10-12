@@ -489,6 +489,7 @@ Status OnLanePlanning::Plan(
     }
   } else {
     const auto* best_ref_info = frame_->FindDriveReferenceLineInfo();
+    const auto* target_ref_info = frame_->FindTargetReferenceLineInfo();
     if (!best_ref_info) {
       std::string msg("planner failed to make a driving plan");
       AERROR << msg;
@@ -513,14 +514,24 @@ Status OnLanePlanning::Plan(
     } else {
       ptr_debug->MergeFrom(best_ref_info->debug());
       ExportReferenceLineDebug(ptr_debug);
+      // Export additional ST-chart for failed lane-change speed planning
+      const auto* failed_ref_info = frame_->FindFailedReferenceLineInfo();
+      if (failed_ref_info) {
+        ExportFailedLaneChangeSTChart(failed_ref_info->debug(), ptr_debug);
+      }
     }
     ptr_trajectory_pb->mutable_latency_stats()->MergeFrom(
         best_ref_info->latency_stats());
     // set right of way status
     ptr_trajectory_pb->set_right_of_way_status(
         best_ref_info->GetRightOfWayStatus());
+
     for (const auto& id : best_ref_info->TargetLaneId()) {
       ptr_trajectory_pb->add_lane_id()->CopyFrom(id);
+    }
+
+    for (const auto& id : target_ref_info->TargetLaneId()) {
+      ptr_trajectory_pb->add_target_lane_id()->CopyFrom(id);
     }
 
     ptr_trajectory_pb->set_trajectory_type(best_ref_info->trajectory_type());
@@ -605,9 +616,13 @@ void PopulateChartOptions(double x_min, double x_max, std::string x_label,
 }
 
 void AddSTGraph(const STGraphDebug& st_graph, Chart* chart) {
-  chart->set_title(st_graph.name());
-  PopulateChartOptions(-2.0, 10.0, "t (second)", 0.0, 80.0, "s (meter)", true,
-                       chart);
+  if (st_graph.name() == "DP_ST_SPEED_OPTIMIZER") {
+    chart->set_title("Speed Heuristic");
+  } else {
+    chart->set_title("Planning S-T Graph");
+  }
+  PopulateChartOptions(-2.0, 10.0, "t (second)", -10.0, 220.0, "s (meter)",
+                       false, chart);
 
   for (const auto& boundary : st_graph.boundary()) {
     auto* boundary_chart = chart->add_polygon();
@@ -621,6 +636,15 @@ void AddSTGraph(const STGraphDebug& st_graph, Chart* chart) {
       point_debug->set_x(point.t());
       point_debug->set_y(point.s());
     }
+  }
+
+  auto* speed_profile = chart->add_line();
+  auto* properties = speed_profile->mutable_properties();
+  (*properties)["color"] = "\"rgba(255, 255, 255, 0.5)\"";
+  for (const auto& point : st_graph.speed_profile()) {
+    auto* point_debug = speed_profile->add_point();
+    point_debug->set_x(point.t());
+    point_debug->set_y(point.s());
   }
 }
 
@@ -664,6 +688,16 @@ void AddSpeedPlan(
     } else if (speed_plan.name() == "QpSplineStSpeedOptimizer") {
       (*properties)["color"] = "\"rgba(54, 162, 235, 1)\"";
     }
+  }
+}
+
+void OnLanePlanning::ExportFailedLaneChangeSTChart(
+    const planning_internal::Debug& debug_info,
+    planning_internal::Debug* debug_chart) {
+  const auto& src_data = debug_info.planning_data();
+  auto* dst_data = debug_chart->mutable_planning_data();
+  for (const auto& st_graph : src_data.st_graph()) {
+    AddSTGraph(st_graph, dst_data->add_chart());
   }
 }
 

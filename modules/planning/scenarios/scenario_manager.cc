@@ -31,6 +31,7 @@
 #include "modules/planning/common/util/util.h"
 #include "modules/planning/scenarios/bare_intersection/unprotected/bare_intersection_unprotected_scenario.h"
 #include "modules/planning/scenarios/lane_follow/lane_follow_scenario.h"
+#include "modules/planning/scenarios/park/emergency_pull_over/emergency_pull_over_scenario.h"
 #include "modules/planning/scenarios/park/pull_over/pull_over_scenario.h"
 #include "modules/planning/scenarios/park/valet_parking/valet_parking_scenario.h"
 #include "modules/planning/scenarios/park_and_go/park_and_go_scenario.h"
@@ -67,6 +68,10 @@ std::unique_ptr<Scenario> ScenarioManager::CreateScenario(
       ptr.reset(
           new scenario::bare_intersection::BareIntersectionUnprotectedScenario(
               config_map_[scenario_type], &scenario_context_));
+      break;
+    case ScenarioConfig::EMERGENCY_PULL_OVER:
+      ptr.reset(new emergency_pull_over::EmergencyPullOverScenario(
+          config_map_[scenario_type], &scenario_context_));
       break;
     case ScenarioConfig::LANE_FOLLOW:
       ptr.reset(new lane_follow::LaneFollowScenario(config_map_[scenario_type],
@@ -125,6 +130,11 @@ void ScenarioManager::RegisterScenarios() {
   CHECK(Scenario::LoadConfig(
       FLAGS_scenario_bare_intersection_unprotected_config_file,
       &config_map_[ScenarioConfig::BARE_INTERSECTION_UNPROTECTED]));
+
+  // emergency_pull_over
+  CHECK(Scenario::LoadConfig(
+      FLAGS_scenario_emergency_pull_over_config_file,
+      &config_map_[ScenarioConfig::EMERGENCY_PULL_OVER]));
 
   // park_and_go
   CHECK(Scenario::LoadConfig(FLAGS_scenario_park_and_go_config_file,
@@ -235,7 +245,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectPullOverScenario(
 
       std::vector<hdmap::LaneInfoConstPtr> lanes;
       reference_line.GetLaneFromS(check_s, &lanes);
-      if (lanes.size() <= 0) {
+      if (lanes.empty()) {
         ADEBUG << "check_s[" << check_s << "] can't find a lane";
         continue;
       }
@@ -278,6 +288,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectPullOverScenario(
       }
       break;
     case ScenarioConfig::BARE_INTERSECTION_UNPROTECTED:
+    case ScenarioConfig::EMERGENCY_PULL_OVER:
     case ScenarioConfig::CHANGE_LANE:
     case ScenarioConfig::PARK_AND_GO:
     case ScenarioConfig::PULL_OVER:
@@ -300,10 +311,29 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectPullOverScenario(
   return default_scenario_type_;
 }
 
-ScenarioConfig::ScenarioType ScenarioManager::SelectPullOverEmergencyScenario(
+ScenarioConfig::ScenarioType ScenarioManager::SelectPadMsgScenario(
     const Frame& frame) {
-  if (emergency_vehicle_alert_) {
-    return ScenarioConfig::PULL_OVER_EMERGENCY;
+  const auto& pad_msg_driving_action = frame.GetPadMsgDrivingAction();
+
+  switch (pad_msg_driving_action) {
+    case DrivingAction::PULL_OVER:
+      if (FLAGS_enable_scenario_emergency_pull_over) {
+        return ScenarioConfig::EMERGENCY_PULL_OVER;
+      }
+      break;
+    case DrivingAction::STOP:
+      // TODO(all): to be added
+      //  if (FLAGS_) {
+      //    return ScenarioConfig::STOP_EMERGENCY;
+      //  }
+      break;
+    case DrivingAction::RESTART_CRUISE:
+      if (FLAGS_enable_scenario_park_and_go) {
+        return ScenarioConfig::PARK_AND_GO;
+      }
+      break;
+    default:
+      break;
   }
 
   return default_scenario_type_;
@@ -330,6 +360,20 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectInterceptionScenario(
       break;
     } else if (overlap.first == ReferenceLineInfo::PNC_JUNCTION) {
       pnc_junction_overlap = const_cast<hdmap::PathOverlap*>(&overlap.second);
+    }
+  }
+
+  // pick a closer one between consecutive bare_intersection and traffic_sign
+  if (traffic_sign_overlap && pnc_junction_overlap) {
+    constexpr double kJunctionDelta = 10.0;
+    double s_diff = std::fabs(traffic_sign_overlap->start_s -
+                             pnc_junction_overlap->start_s);
+    if (s_diff >= kJunctionDelta) {
+      if (pnc_junction_overlap->start_s > traffic_sign_overlap->start_s) {
+        pnc_junction_overlap = nullptr;
+      } else {
+        traffic_sign_overlap = nullptr;
+      }
     }
   }
 
@@ -396,6 +440,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectStopSignScenario(
       }
       break;
     case ScenarioConfig::BARE_INTERSECTION_UNPROTECTED:
+    case ScenarioConfig::EMERGENCY_PULL_OVER:
     case ScenarioConfig::STOP_SIGN_PROTECTED:
     case ScenarioConfig::STOP_SIGN_UNPROTECTED:
     case ScenarioConfig::TRAFFIC_LIGHT_PROTECTED:
@@ -492,6 +537,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectTrafficLightScenario(
       }
       break;
     case ScenarioConfig::BARE_INTERSECTION_UNPROTECTED:
+    case ScenarioConfig::EMERGENCY_PULL_OVER:
     case ScenarioConfig::STOP_SIGN_PROTECTED:
     case ScenarioConfig::STOP_SIGN_UNPROTECTED:
     case ScenarioConfig::TRAFFIC_LIGHT_PROTECTED:
@@ -541,6 +587,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectYieldSignScenario(
       }
       break;
     case ScenarioConfig::BARE_INTERSECTION_UNPROTECTED:
+    case ScenarioConfig::EMERGENCY_PULL_OVER:
     case ScenarioConfig::STOP_SIGN_PROTECTED:
     case ScenarioConfig::STOP_SIGN_UNPROTECTED:
     case ScenarioConfig::TRAFFIC_LIGHT_PROTECTED:
@@ -595,6 +642,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectBareIntersectionScenario(
       }
       break;
     case ScenarioConfig::BARE_INTERSECTION_UNPROTECTED:
+    case ScenarioConfig::EMERGENCY_PULL_OVER:
     case ScenarioConfig::STOP_SIGN_PROTECTED:
     case ScenarioConfig::STOP_SIGN_UNPROTECTED:
     case ScenarioConfig::TRAFFIC_LIGHT_PROTECTED:
@@ -633,6 +681,8 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectValetParkingScenario(
 ScenarioConfig::ScenarioType ScenarioManager::SelectParkAndGoScenario(
     const Frame& frame) {
   bool park_and_go = false;
+  const auto& scenario_config =
+      config_map_[ScenarioConfig::PARK_AND_GO].park_and_go_config();
   common::VehicleState vehicle_state =
       common::VehicleStateProvider::Instance()->vehicle_state();
   auto adc_point = common::util::MakePointENU(
@@ -649,8 +699,23 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectParkAndGoScenario(
           .max_abs_speed_when_stopped();
 
   hdmap::LaneInfoConstPtr lane;
-  // if vehicle is static and (off-lane or not on city_driving lane)
+
+  // check ego vehicle distance to destination
+  const auto& routing = frame.local_view().routing;
+  const auto& routing_end = *(routing->routing_request().waypoint().rbegin());
+  common::SLPoint dest_sl;
+  const auto& reference_line_info = frame.reference_line_info().front();
+  const auto& reference_line = reference_line_info.reference_line();
+  reference_line.XYToSL({routing_end.pose().x(), routing_end.pose().y()},
+                        &dest_sl);
+  const double adc_front_edge_s = reference_line_info.AdcSlBoundary().end_s();
+
+  const double adc_distance_to_dest = dest_sl.s() - adc_front_edge_s;
+  ADEBUG << "adc_distance_to_dest:" << adc_distance_to_dest;
+  // if vehicle is static, far enough to destination and (off-lane or not on
+  // city_driving lane)
   if (std::fabs(adc_speed) < max_abs_speed_when_stopped &&
+      adc_distance_to_dest > scenario_config.min_dist_to_dest() &&
       (HDMapUtil::BaseMap().GetNearestLaneWithHeading(
            adc_point, 2.0, vehicle_state.heading(), M_PI / 3.0, &lane, &s,
            &l) != 0 ||
@@ -679,8 +744,6 @@ void ScenarioManager::Observe(const Frame& frame) {
       first_encountered_overlap_map_[overlap.first] = overlap.second;
     }
   }
-
-  CheckEmergencyVehicleAlert();
 }
 
 void ScenarioManager::Update(const common::TrajectoryPoint& ego_point,
@@ -700,9 +763,9 @@ void ScenarioManager::ScenarioDispatch(const common::TrajectoryPoint& ego_point,
   // default: LANE_FOLLOW
   ScenarioConfig::ScenarioType scenario_type = default_scenario_type_;
 
-  if (FLAGS_enable_scenario_pull_over_emergency) {
-    scenario_type = SelectPullOverEmergencyScenario(frame);
-  }
+  ////////////////////////////////////////
+  // Pad Msg Scenario
+  scenario_type = SelectPadMsgScenario(frame);
 
   if (scenario_type == default_scenario_type_) {
     // check current_scenario (not switchable)
@@ -710,9 +773,9 @@ void ScenarioManager::ScenarioDispatch(const common::TrajectoryPoint& ego_point,
       case ScenarioConfig::LANE_FOLLOW:
       case ScenarioConfig::CHANGE_LANE:
       case ScenarioConfig::PULL_OVER:
-      case ScenarioConfig::PULL_OVER_EMERGENCY:
         break;
       case ScenarioConfig::BARE_INTERSECTION_UNPROTECTED:
+      case ScenarioConfig::EMERGENCY_PULL_OVER:
       case ScenarioConfig::PARK_AND_GO:
       case ScenarioConfig::STOP_SIGN_PROTECTED:
       case ScenarioConfig::STOP_SIGN_UNPROTECTED:
@@ -1053,13 +1116,6 @@ void ScenarioManager::UpdatePlanningContextPullOverScenario(
       }
     }
   }
-}
-
-void ScenarioManager::CheckEmergencyVehicleAlert() {
-  static int emergency_vehicle_alert_count = 0;
-
-  // TODO(all): to be implement
-  emergency_vehicle_alert_ = (emergency_vehicle_alert_count >= 5);
 }
 
 }  // namespace scenario

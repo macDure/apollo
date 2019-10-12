@@ -48,9 +48,11 @@ cc_library(
     deps = [
         ":drive_event_trigger",
         ":emergency_mode_trigger",
+        ":hard_brake_trigger",
         ":interval_pool",
         ":regular_interval_trigger",
         ":small_topics_trigger",
+        ":swerve_trigger",
         "//cyber/common:file",
         "//cyber/record:record_writer",
         "//modules/common/util",
@@ -88,12 +90,36 @@ cc_library(
 )
 
 cc_library(
+    name = "hard_brake_trigger",
+    srcs = ["hard_brake_trigger.cc"],
+    hdrs = ["hard_brake_trigger.h"],
+    deps = [
+        ":trigger_base",
+        "//modules/canbus/proto:canbus_proto",
+        "//modules/common/adapters:adapter_gflags",
+        "//modules/control/proto:control_proto",
+    ],
+)
+
+cc_library(
     name = "small_topics_trigger",
     srcs = ["small_topics_trigger.cc"],
     hdrs = ["small_topics_trigger.h"],
     deps = [
         ":channel_pool",
         ":trigger_base",
+    ],
+)
+
+cc_library(
+    name = "swerve_trigger",
+    srcs = ["swerve_trigger.cc"],
+    hdrs = ["swerve_trigger.h"],
+    deps = [
+        ":trigger_base",
+        "//modules/canbus/proto:canbus_proto",
+        "//modules/common/adapters:adapter_gflags",
+        "//modules/control/proto:control_proto",
     ],
 )
 

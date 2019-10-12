@@ -10,6 +10,7 @@ import PlanningData from "store/planning_data";
 import Playback from "store/playback";
 import RouteEditingManager from "store/route_editing_manager";
 import TrafficSignal from "store/traffic_signal";
+import CameraData from "store/camera_data";
 
 class DreamviewStore {
     // Mutable States
@@ -51,6 +52,8 @@ class DreamviewStore {
     @observable geolocation = {};
 
     @observable moduleDelay = observable.map();
+
+    @observable cameraData = new CameraData();
 
     @observable newDisengagementReminder = false;
 
@@ -106,16 +109,13 @@ class DreamviewStore {
     }
 
     handleOptionToggle(option) {
-        const oldShowMonitor =
-            this.options.showPNCMonitor || this.options.showDataCollectionMonitor;
+        const oldShowMonitor = this.options.showMonitor;
         const oldShowRouteEditingBar = this.options.showRouteEditingBar;
 
         this.options.toggle(option);
 
-        // disable tools turned off after toggling
-        if (oldShowMonitor &&
-            !this.options.showPNCMonitor &&
-            !this.options.showDataCollectionMonitor) {
+        // disable tools after toggling
+        if (oldShowMonitor && !this.options.showMonitor) {
             this.disableMonitor();
         }
         if (oldShowRouteEditingBar && !this.options.showRouteEditingBar) {
@@ -123,21 +123,12 @@ class DreamviewStore {
         }
 
         // enable selected tool
-        if (this.options[option]) {
-            switch (option) {
-                case "showPNCMonitor":
-                    this.options.showDataCollectionMonitor = false;
-                    this.enableMonitor();
-                    break;
-                case 'showDataCollectionMonitor':
-                    this.options.showPNCMonitor = false;
-                    this.enableMonitor();
-                    break;
-                case 'showRouteEditingBar':
-                    this.options.showPOI = false;
-                    this.routeEditingManager.enableRouteEditing();
-                    break;
-            }
+        if (this.options.showMonitor) {
+            this.enableMonitor();
+        }
+        if (option === "showRouteEditingBar") {
+            this.options.showPOI = false;
+            this.routeEditingManager.enableRouteEditing();
         }
     }
 

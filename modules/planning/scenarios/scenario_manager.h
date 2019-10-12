@@ -54,8 +54,7 @@ class ScenarioManager final {
 
   ScenarioConfig::ScenarioType SelectPullOverScenario(const Frame& frame);
 
-  ScenarioConfig::ScenarioType SelectPullOverEmergencyScenario(
-      const Frame& frame);
+  ScenarioConfig::ScenarioType SelectPadMsgScenario(const Frame& frame);
 
   ScenarioConfig::ScenarioType SelectInterceptionScenario(const Frame& frame);
 
@@ -99,8 +98,6 @@ class ScenarioManager final {
 
   void UpdatePlanningContextPullOverScenario(
       const Frame& frame, const ScenarioConfig::ScenarioType& scenario_type);
-
-  void CheckEmergencyVehicleAlert();
 
  private:
   static bool emergency_vehicle_alert_;

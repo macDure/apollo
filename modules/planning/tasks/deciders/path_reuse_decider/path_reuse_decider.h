@@ -25,6 +25,7 @@
 
 #include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/planning/common/history.h"
+#include "modules/planning/common/indexed_list.h"
 #include "modules/planning/common/obstacle_blocking_analyzer.h"
 #include "modules/planning/proto/decider_config.pb.h"
 #include "modules/planning/proto/planning_config.pb.h"
@@ -56,27 +57,19 @@ class PathReuseDecider : public Decider {
       std::vector<std::pair<const double, const common::PointENU>>*
           history_stop_positions);
 
-  // get current s_projection of current virtual obstacles
-  void GetCurrentStopObstacleS(ReferenceLineInfo* const reference_line_info,
-                               std::vector<double>* current_stop_obstacle);
+  void GetADCSLPoint(const ReferenceLine& reference_line,
+                     common::SLPoint* adc_position_sl);
 
-  void GetHistoryStopSPosition(ReferenceLineInfo* const reference_line_info,
-                               const std::vector<const HistoryObjectDecision*>&
-                                   history_objects_decisions,
-                               std::vector<double>* history_stop_positions);
-
-  // compared stop decision in s-direction
-  bool SameStopS(const double history_stop_s, const double current_stop_s);
-
-  // check if the nearest Stop obstacle in history is same as current
-  bool IsSameStopObstacles(Frame* const frame,
-                           ReferenceLineInfo* const reference_line_info);
-
-  // check if same obstacles();
-  bool IsSameObstacles(ReferenceLineInfo* const reference_line_info);
-
+  bool GetBlockingObstacleS(ReferenceLineInfo* const reference_line_info,
+                            double* blocking_obstacle_s);
+  // ignore blocking obstacle when it is far away
+  bool IsIgnoredBlockingObstacle(ReferenceLineInfo* const reference_line_info);
   // check if path is collision free
   bool IsCollisionFree(ReferenceLineInfo* const reference_line_info);
+
+  // trim history path
+  bool TrimHistoryPath(Frame* frame,
+                       ReferenceLineInfo* const reference_line_info);
 
  private:
   History* history_ = History::Instance();

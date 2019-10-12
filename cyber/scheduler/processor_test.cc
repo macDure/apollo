@@ -20,27 +20,37 @@
 #include <vector>
 
 #include "cyber/cyber.h"
-#include "policy/choreography_context.h"
+#include "cyber/scheduler/common/pin_thread.h"
+#include "cyber/scheduler/policy/choreography_context.h"
 
 namespace apollo {
 namespace cyber {
-namespace processortest {
+namespace scheduler {
 
-using scheduler::Processor;
 using scheduler::ChoreographyContext;
+using scheduler::Processor;
 
 TEST(ProcessorTest, all) {
   auto proc = std::make_shared<Processor>();
   auto context = std::make_shared<ChoreographyContext>();
   proc->BindContext(context);
-  std::string affinity = "xxx";
+  std::string affinity = "1to1";
   std::vector<int> cpuset;
   cpuset.emplace_back(0);
-  proc->SetSchedAffinity(cpuset, affinity, 0);
-  proc->SetSchedPolicy("SCHED_OTHER", 0);
+  SetSchedAffinity(proc->Thread(), cpuset, affinity, 0);
+  SetSchedPolicy(proc->Thread(), "SCHED_OTHER", 0, proc->Tid());
+
+  auto proc1 = std::make_shared<Processor>();
+  auto context1 = std::make_shared<ChoreographyContext>();
+  proc1->BindContext(context1);
+  affinity = "range";
+  SetSchedAffinity(proc1->Thread(), cpuset, affinity, 0);
+  SetSchedPolicy(proc1->Thread(), "SCHED_FIFO", 0, proc1->Tid());
+
   proc->Stop();
+  proc1->Stop();
 }
 
-}  // namespace processortest
+}  // namespace scheduler
 }  // namespace cyber
 }  // namespace apollo
