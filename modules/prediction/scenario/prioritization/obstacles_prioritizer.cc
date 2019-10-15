@@ -48,7 +48,7 @@ bool IsLaneSequenceInReferenceLine(
     const ADCTrajectoryContainer* ego_trajectory_container) {
   for (const auto& lane_segment : lane_sequence.lane_segment()) {
     std::string lane_id = lane_segment.lane_id();
-    if (ego_trajectory_container->IsLaneIdInReferenceLine(lane_id)) {
+    if (ego_trajectory_container->IsLaneIdInTargetReferenceLine(lane_id)) {
       return true;
     }
   }
@@ -302,7 +302,7 @@ void ObstaclesPrioritizer::AssignCautionLevelByEgoReferenceLine() {
     return;
   }
   const std::vector<std::string>& lane_ids =
-      adc_trajectory_container->GetADCLaneIDSequence();
+      adc_trajectory_container->GetADCTargetLaneIDSequence();
   if (lane_ids.empty()) {
     return;
   }
@@ -407,7 +407,7 @@ void ObstaclesPrioritizer::AssignCautionLevelByEgoReferenceLine() {
       continue;
     }
     for (const std::string& lane_id : nearby_lane_ids) {
-      if (!adc_trajectory_container->IsLaneIdInReferenceLine(lane_id)) {
+      if (!adc_trajectory_container->IsLaneIdInTargetReferenceLine(lane_id)) {
         continue;
       }
       std::shared_ptr<const LaneInfo> lane_info_ptr =
