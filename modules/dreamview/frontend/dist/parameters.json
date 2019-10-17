@@ -117,9 +117,6 @@
 		"showPOI": {
 			"default": false
 		},
-		"enableAudioCapture": {
-			"default": false
-		},
 		"showDataRecorder": {
 			"default": false
 		},
@@ -136,6 +133,9 @@
 			"default": false
 		},
 		"showVideo": {
+			"default": false
+		},
+		"showTeleopConsoleMonitor": {
 			"default": false
 		},
 		"cameraAngle": {

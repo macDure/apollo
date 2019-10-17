@@ -1,6 +1,5 @@
 import React from "react";
 import { inject, observer } from "mobx-react";
-import { Tab } from "react-tabs";
 
 import SplitPane from 'react-split-pane';
 import Header from "components/Header";
@@ -8,7 +7,6 @@ import MainView from "components/Layouts/MainView";
 import ToolView from "components/Layouts/ToolView";
 import MonitorPanel from "components/Layouts/MonitorPanel";
 import SideBar from "components/SideBar";
-import AudioCapture from "components/AudioCapture";
 
 import HOTKEYS_CONFIG from "store/config/hotkeys.yml";
 import WS, { MAP_WS, POINT_CLOUD_WS, CAMERA_WS } from "store/websocket";
@@ -50,7 +48,7 @@ export default class Dreamview extends React.Component {
     }
 
     componentWillMount() {
-        this.props.store.updateDimension();
+        this.props.store.initDimension();
     }
 
     componentDidMount() {
@@ -90,9 +88,6 @@ export default class Dreamview extends React.Component {
                             viewName={options.monitorName}
                             showVideo={options.showVideo} />
                     </SplitPane>
-                </div>
-                <div className="hidden">
-                    {options.enableAudioCapture && <AudioCapture />}
                 </div>
             </div>
         );

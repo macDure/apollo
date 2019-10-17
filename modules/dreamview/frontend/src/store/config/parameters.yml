@@ -95,8 +95,6 @@ options:
     default: false
   showPOI:
     default: false
-  enableAudioCapture:
-    default: false
   showDataRecorder:
     default: false
 
@@ -111,6 +109,10 @@ options:
     default: false
   showVideo:
     default: false
+
+  # teleop
+  showTeleopConsoleMonitor:
+      default: false
 
   # layer Menu options
   cameraAngle:
