@@ -7,11 +7,13 @@ cc_library(
     srcs = [
         "emergency_pull_over_scenario.cc",
         "stage_approach.cc",
+        "stage_slow_down.cc",
         "stage_standby.cc",
     ],
     hdrs = [
         "emergency_pull_over_scenario.h",
         "stage_approach.h",
+        "stage_slow_down.h",
         "stage_standby.h",
     ],
     copts = ["-DMODULE_NAME=\\\"planning\\\""],
@@ -46,10 +48,40 @@ cc_test(
 )
 
 cc_test(
+    name = "stage_slow_down_test",
+    size = "small",
+    srcs = [
+        "stage_slow_down_test.cc",
+    ],
+    data = [
+        "//modules/planning:planning_conf",
+    ],
+    deps = [
+        ":emergency_pull_over_scenario",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
     name = "stage_approach_test",
     size = "small",
     srcs = [
         "stage_approach_test.cc",
+    ],
+    data = [
+        "//modules/planning:planning_conf",
+    ],
+    deps = [
+        ":emergency_pull_over_scenario",
+        "@gtest//:main",
+    ],
+)
+
+cc_test(
+    name = "stage_standby_test",
+    size = "small",
+    srcs = [
+        "stage_standby_test.cc",
     ],
     data = [
         "//modules/planning:planning_conf",

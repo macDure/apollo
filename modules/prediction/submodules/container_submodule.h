@@ -28,7 +28,9 @@
 #include "modules/localization/proto/localization.pb.h"
 #include "modules/perception/proto/perception_obstacle.pb.h"
 #include "modules/planning/proto/planning.pb.h"
+#include "modules/storytelling/proto/story.pb.h"
 #include "modules/prediction/proto/prediction_obstacle.pb.h"
+#include "modules/prediction/proto/submodule_messages.pb.h"
 
 /**
  * @namespace apollo::prediction
@@ -73,7 +75,9 @@ class ContainerSubmodule
   std::shared_ptr<cyber::Reader<localization::LocalizationEstimate>>
       localization_reader_;
 
-  std::shared_ptr<cyber::Writer<PredictionObstacles>> prediction_writer_;
+  std::shared_ptr<cyber::Reader<storytelling::Stories>> storytelling_reader_;
+
+  std::shared_ptr<cyber::Writer<PredictionContainerMessage>> container_writer_;
 };
 
 CYBER_REGISTER_COMPONENT(ContainerSubmodule)

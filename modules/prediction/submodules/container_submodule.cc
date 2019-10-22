@@ -52,9 +52,12 @@ bool ContainerSubmodule::Init() {
       node_->CreateReader<localization::LocalizationEstimate>(
           FLAGS_localization_topic, nullptr);
 
+  storytelling_reader_ = node_->CreateReader<storytelling::Stories>(
+          FLAGS_storytelling_topic, nullptr);
+
   // TODO(kechxu) change topic name when finalized
-  prediction_writer_ =
-      node_->CreateWriter<PredictionObstacles>(FLAGS_prediction_topic);
+  container_writer_ =
+      node_->CreateWriter<PredictionContainerMessage>(FLAGS_prediction_topic);
   return true;
 }
 
@@ -66,7 +69,12 @@ bool ContainerSubmodule::Proc(
       ContainerManager::Instance()->GetContainer<ObstaclesContainer>(
           AdapterConfig::PERCEPTION_OBSTACLES);
   CHECK_NOTNULL(obstacles_container_ptr);
-  // TODO(kechxu): implement the writer
+
+  PredictionContainerMessage container_message =
+      obstacles_container_ptr->GetContainerMessage();
+  container_writer_->Write(
+      std::make_shared<PredictionContainerMessage>(container_message));
+
   return true;
 }
 

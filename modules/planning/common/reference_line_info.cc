@@ -103,8 +103,10 @@ bool ReferenceLineInfo::Init(const std::vector<const Obstacle*>& obstacles) {
                                   FLAGS_speed_bump_speed_limit);
   }
 
-  // set lattice planning target speed limit;
   SetCruiseSpeed(FLAGS_default_cruise_speed);
+
+  // set lattice planning target speed limit;
+  SetLatticeCruiseSpeed(FLAGS_default_cruise_speed);
 
   vehicle_signal_.Clear();
 
@@ -434,7 +436,7 @@ bool ReferenceLineInfo::IsIrrelevantObstacle(const Obstacle& obstacle) {
   if (obstacle_boundary.end_s() > reference_line_.Length()) {
     return true;
   }
-  if (is_on_reference_line_ &&
+  if (is_on_reference_line_ && !IsChangeLanePath() &&
       obstacle_boundary.end_s() < adc_sl_boundary_.end_s() &&
       (reference_line_.IsOnLane(obstacle_boundary) ||
        obstacle_boundary.end_s() < 0.0)) {  // if obstacle is far backward
@@ -447,11 +449,11 @@ const DiscretizedTrajectory& ReferenceLineInfo::trajectory() const {
   return discretized_trajectory_;
 }
 
-void ReferenceLineInfo::SetStopPoint(const StopPoint& stop_point) {
+void ReferenceLineInfo::SetLatticeStopPoint(const StopPoint& stop_point) {
   planning_target_.mutable_stop_point()->CopyFrom(stop_point);
 }
 
-void ReferenceLineInfo::SetCruiseSpeed(double speed) {
+void ReferenceLineInfo::SetLatticeCruiseSpeed(double speed) {
   planning_target_.set_cruise_speed(speed);
 }
 
