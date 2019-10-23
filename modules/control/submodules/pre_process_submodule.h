@@ -24,28 +24,28 @@
 #include "cyber/component/timer_component.h"
 #include "modules/canbus/proto/chassis.pb.h"
 #include "modules/common/monitor_log/monitor_log_buffer.h"
+#include "modules/common/status/status.h"
 #include "modules/common/util/util.h"
-#include "modules/control/controller/controller.h"
-#include "modules/control/controller/mpc_controller.h"
 #include "modules/control/proto/control_cmd.pb.h"
-#include "modules/control/proto/control_conf.pb.h"
+#include "modules/control/proto/control_common_conf.pb.h"
+// #include "modules/control/proto/control_conf.pb.h"
 #include "modules/control/proto/pad_msg.pb.h"
 #include "modules/localization/proto/localization.pb.h"
 #include "modules/planning/proto/planning.pb.h"
 
 namespace apollo {
 namespace control {
-class MPCControllerSubmodule final : public apollo::cyber::TimerComponent {
+class PreProcessSubmodule : public apollo::cyber::TimerComponent {
  public:
   /**
    * @brief Construct a new MPCControllerSubmodule object
    *
    */
-  MPCControllerSubmodule();
+  PreProcessSubmodule();
   /**
    * @brief Destructor
    */
-  ~MPCControllerSubmodule();
+  ~PreProcessSubmodule();
 
   /**
    * @brief Get name of the node
@@ -66,6 +66,7 @@ class MPCControllerSubmodule final : public apollo::cyber::TimerComponent {
    * @return false fail to generate control command
    */
   bool Proc() override;
+
   struct LocalView {
     canbus::Chassis chassis;
     planning::ADCTrajectory trajectory;
@@ -74,40 +75,9 @@ class MPCControllerSubmodule final : public apollo::cyber::TimerComponent {
 
  private:
   void OnChassis(const std::shared_ptr<apollo::canbus::Chassis> &chassis);
-  // Upon receiving pad message
-  void OnPad(const std::shared_ptr<apollo::control::PadMessage> &pad);
-
-  void OnPlanning(
-      const std::shared_ptr<apollo::planning::ADCTrajectory> &trajectory);
-
-  void OnLocalization(
-      const std::shared_ptr<apollo::localization::LocalizationEstimate>
-          &localization);
-
-  // Upon receiving monitor message
-  void OnMonitor(
-      const apollo::common::monitor::MonitorMessage &monitor_message);
-
-  common::Status ProduceControlCommand(
-      apollo::control::ControlCommand *control_command);
-
-  common::Status CheckInput(LocalView *local_view);
-  common::Status CheckTimestamp(const LocalView &local_view);
-  common::Status CheckPad();
 
  private:
   double init_time_ = 0.0;
-
-  bool estop_ = false;
-  std::string estop_reason_;
-  bool pad_received_ = false;
-
-  unsigned int status_lost_ = 0;
-  unsigned int status_sanity_check_failed_ = 0;
-  unsigned int total_status_lost_ = 0;
-  unsigned int total_status_sanity_check_failed_ = 0;
-
-  MPCController mpc_controller_;
 
   localization::LocalizationEstimate latest_localization_;
   canbus::Chassis latest_chassis_;
@@ -128,12 +98,11 @@ class MPCControllerSubmodule final : public apollo::cyber::TimerComponent {
   common::monitor::MonitorLogBuffer monitor_logger_buffer_;
 
   // TODO(SHU): separate conf
-  ControlConf mpc_controller_conf_;
+  ControlCommonConf control_common_conf_;
 
   LocalView local_view_;
 };
 
-CYBER_REGISTER_COMPONENT(MPCControllerSubmodule)
-
+CYBER_REGISTER_COMPONENT(PreProcessSubmodule);
 }  // namespace control
 }  // namespace apollo
