@@ -16,7 +16,7 @@
 
 /**
  * @file
- * @brief Use scenario submodule to deal with scenario-related tasks
+ * @brief Use evaluator submodule to manage all evaluators
  */
 
 #pragma once
@@ -26,17 +26,17 @@
 
 #include "cyber/component/component.h"
 
-#include "modules/prediction/proto/submodule_messages.pb.h"
+#include "modules/prediction/container/obstacles/obstacles_container.h"
 
 namespace apollo {
 namespace prediction {
 
-class ScenarioSubmodule : public cyber::Component<PredictionContainerMessage> {
+class EvaluatorSubmodule : public cyber::Component<ContainerOutput> {
  public:
   /**
    * @brief Destructor
    */
-  ~ScenarioSubmodule();
+  ~EvaluatorSubmodule();
 
   /**
    * @brief Get name of the node
@@ -51,17 +51,16 @@ class ScenarioSubmodule : public cyber::Component<PredictionContainerMessage> {
   bool Init() override;
 
   /**
-   * @brief Data callback upon receiving a prediction container message.
-   * @param Prediction container message.
+   * @brief Data callback upon receiving a prediction container output.
+   * @param Prediction container output.
    */
-  bool Proc(const std::shared_ptr<PredictionContainerMessage>&) override;
+  bool Proc(const std::shared_ptr<ContainerOutput>&) override;
 
  private:
-  // TODO(kechxu) define storytelling reader
   // TODO(kechxu) define writer
 };
 
-CYBER_REGISTER_COMPONENT(ScenarioSubmodule)
+CYBER_REGISTER_COMPONENT(EvaluatorSubmodule)
 
 }  // namespace prediction
 }  // namespace apollo

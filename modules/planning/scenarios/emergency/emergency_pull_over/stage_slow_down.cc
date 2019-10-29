@@ -18,13 +18,14 @@
  * @file
  **/
 
-#include "modules/planning/scenarios/park/emergency_pull_over/stage_approach.h"
+#include "modules/planning/scenarios/emergency/emergency_pull_over/stage_slow_down.h"
 
 #include <string>
 #include <vector>
 
 #include "cyber/common/log.h"
 
+#include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/planning/common/frame.h"
 #include "modules/planning/common/planning_context.h"
 #include "modules/planning/common/util/common.h"
@@ -38,37 +39,42 @@ namespace emergency_pull_over {
 
 using apollo::common::TrajectoryPoint;
 
-EmergencyPullOverStageApproach::EmergencyPullOverStageApproach(
+EmergencyPullOverStageSlowDown::EmergencyPullOverStageSlowDown(
     const ScenarioConfig::StageConfig& config)
     : Stage(config) {}
 
-Stage::StageStatus EmergencyPullOverStageApproach::Process(
+Stage::StageStatus EmergencyPullOverStageSlowDown::Process(
     const TrajectoryPoint& planning_init_point, Frame* frame) {
-  ADEBUG << "stage: Approach";
+  ADEBUG << "stage: SlowDown";
   CHECK_NOTNULL(frame);
 
   scenario_config_.CopyFrom(GetContext()->scenario_config);
 
+  // set cruise_speed to slow down
+  const double adc_speed =
+      common::VehicleStateProvider::Instance()->linear_velocity();
+  const double target_speed =
+      adc_speed - scenario_config_.max_stop_deceleration() *
+                      scenario_config_.slow_down_deceleration_time();
+  auto& reference_line_info = frame->mutable_reference_line_info()->front();
+  reference_line_info.SetCruiseSpeed(target_speed);
+
   bool plan_ok = ExecuteTaskOnReferenceLine(planning_init_point, frame);
   if (!plan_ok) {
-    AERROR << "EmergencyPullOverStageApproach planning error";
+    AERROR << "EmergencyPullOverStageSlowDown planning error";
   }
 
-  auto& reference_line_info = frame->mutable_reference_line_info()->front();
-
-  // set vehicle signal
-  reference_line_info.SetEmergencyLight();
-
-  // TODO(all): to be implemented
-  if (1) {
+  // check slow enough
+  constexpr double kSpeedTolarence = 1.0;
+  if (adc_speed - target_speed <= kSpeedTolarence) {
     return FinishStage();
   }
 
   return StageStatus::RUNNING;
 }
 
-Stage::StageStatus EmergencyPullOverStageApproach::FinishStage() {
-  next_stage_ = ScenarioConfig::EMERGENCY_PULL_OVER_STANDBY;
+Stage::StageStatus EmergencyPullOverStageSlowDown::FinishStage() {
+  next_stage_ = ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH;
   return Stage::FINISHED;
 }
 

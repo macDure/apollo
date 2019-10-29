@@ -22,7 +22,7 @@
 
 #include "modules/planning/proto/planning_config.pb.h"
 
-#include "modules/planning/scenarios/park/emergency_pull_over/emergency_pull_over_scenario.h"
+#include "modules/planning/scenarios/emergency/emergency_pull_over/emergency_pull_over_scenario.h"
 #include "modules/planning/scenarios/stage.h"
 
 namespace apollo {
@@ -32,20 +32,18 @@ namespace emergency_pull_over {
 
 struct EmergencyPullOverContext;
 
-class EmergencyPullOverStageStandby : public Stage {
+class EmergencyPullOverStageApproach : public Stage {
  public:
-  explicit EmergencyPullOverStageStandby(
-      const ScenarioConfig::StageConfig& config)
-      : Stage(config) {}
+  explicit EmergencyPullOverStageApproach(
+      const ScenarioConfig::StageConfig& config);
 
- private:
-  Stage::StageStatus Process(const common::TrajectoryPoint& planning_init_point,
-                             Frame* frame) override;
+  StageStatus Process(const common::TrajectoryPoint& planning_init_point,
+                      Frame* frame) override;
+
   EmergencyPullOverContext* GetContext() {
-    return GetContextAs<EmergencyPullOverContext>();
+    return Stage::GetContextAs<EmergencyPullOverContext>();
   }
 
- private:
   Stage::StageStatus FinishStage();
 
  private:

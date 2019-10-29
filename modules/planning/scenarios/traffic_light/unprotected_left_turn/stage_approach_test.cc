@@ -16,36 +16,40 @@
 
 #define protected public
 #define private public
-#include "modules/planning/scenarios/park/emergency_pull_over/stage_slow_down.h"
+#include "modules/planning/scenarios/traffic_light/unprotected_left_turn/stage_approach.h"
 
 #include "gtest/gtest.h"
 
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
+#include "modules/planning/common/planning_gflags.h"
 
 namespace apollo {
 namespace planning {
 namespace scenario {
-namespace emergency_pull_over {
+namespace traffic_light {
 
-class StageSlowDownTest : public ::testing::Test {
+class TrafficLightUnprotectedLeftTurnStageApproachTest
+    : public ::testing::Test {
  public:
   virtual void SetUp() {
-    config_.set_stage_type(ScenarioConfig::EMERGENCY_PULL_OVER_SLOW_DOWN);
+    config_.set_stage_type(
+        ScenarioConfig::TRAFFIC_LIGHT_UNPROTECTED_LEFT_TURN_APPROACH);
   }
 
  protected:
   ScenarioConfig::StageConfig config_;
 };
 
-TEST_F(StageSlowDownTest, Init) {
-  EmergencyPullOverStageSlowDown emergency_pull_over_stage_slow_down(config_);
-  EXPECT_EQ(emergency_pull_over_stage_slow_down.Name(),
+TEST_F(TrafficLightUnprotectedLeftTurnStageApproachTest, Init) {
+  TrafficLightUnprotectedLeftTurnStageApproach
+      traffic_light_unprotected_left_turn_stage_approach(config_);
+  EXPECT_EQ(traffic_light_unprotected_left_turn_stage_approach.Name(),
             ScenarioConfig::StageType_Name(
-                ScenarioConfig::EMERGENCY_PULL_OVER_SLOW_DOWN));
+                ScenarioConfig::TRAFFIC_LIGHT_UNPROTECTED_LEFT_TURN_APPROACH));
 }
 
-}  // namespace emergency_pull_over
+}  // namespace traffic_light
 }  // namespace scenario
 }  // namespace planning
 }  // namespace apollo

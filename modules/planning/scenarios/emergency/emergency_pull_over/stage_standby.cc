@@ -18,7 +18,7 @@
  * @file
  **/
 
-#include "modules/planning/scenarios/park/emergency_pull_over/stage_standby.h"
+#include "modules/planning/scenarios/emergency/emergency_pull_over/stage_standby.h"
 
 #include <string>
 #include <vector>
@@ -49,6 +49,10 @@ Stage::StageStatus EmergencyPullOverStageStandby::Process(
   if (!plan_ok) {
     AERROR << "EmergencyPullOverStageStandby planning error";
   }
+
+  // reset cruise_speed
+  auto& reference_line_info = frame->mutable_reference_line_info()->front();
+  reference_line_info.SetCruiseSpeed(FLAGS_default_cruise_speed);
 
   // TODO(all): add a stop fence ahead of ADC
 

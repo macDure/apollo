@@ -28,24 +28,25 @@
 #include "modules/common/util/util.h"
 #include "modules/control/proto/control_cmd.pb.h"
 #include "modules/control/proto/control_common_conf.pb.h"
-// #include "modules/control/proto/control_conf.pb.h"
 #include "modules/control/proto/pad_msg.pb.h"
+#include "modules/control/proto/preprocessor.pb.h"
 #include "modules/localization/proto/localization.pb.h"
 #include "modules/planning/proto/planning.pb.h"
 
 namespace apollo {
 namespace control {
-class PreProcessSubmodule : public apollo::cyber::TimerComponent {
+
+class PreprocessorSubmodule : public apollo::cyber::TimerComponent {
  public:
   /**
-   * @brief Construct a new MPCControllerSubmodule object
+   * @brief Construct a new PreprocessorSubmodule object
    *
    */
-  PreProcessSubmodule();
+  PreprocessorSubmodule();
   /**
    * @brief Destructor
    */
-  ~PreProcessSubmodule();
+  ~PreprocessorSubmodule();
 
   /**
    * @brief Get name of the node
@@ -54,30 +55,85 @@ class PreProcessSubmodule : public apollo::cyber::TimerComponent {
   std::string Name() const;
 
   /**
-   * @brief Initialize the node
+   * @brief Initialize the submodule
    * @return If initialized
    */
   bool Init() override;
 
-  /**
-   * @brief generate control command
-   *
-   * @return true control command is successfully generated
-   * @return false fail to generate control command
-   */
   bool Proc() override;
 
-  struct LocalView {
-    canbus::Chassis chassis;
-    planning::ADCTrajectory trajectory;
-    localization::LocalizationEstimate localization;
-  };
-
  private:
+  /**
+   * @brief upon receiving chassis message
+   *
+   * @param chassis
+   */
   void OnChassis(const std::shared_ptr<apollo::canbus::Chassis> &chassis);
+
+  /**
+   * @brief upon receiving pad message
+   *
+   * @param pad
+   */
+  void OnPad(const std::shared_ptr<apollo::control::PadMessage> &pad);
+
+  /**
+   * @brief upon receiving planning message
+   *
+   * @param trajectory
+   */
+  void OnPlanning(
+      const std::shared_ptr<apollo::planning::ADCTrajectory> &trajectory);
+
+  /**
+   * @brief upon receiving localization message
+   *
+   * @param localization
+   */
+  void OnLocalization(
+      const std::shared_ptr<apollo::localization::LocalizationEstimate>
+          &localization);
+
+  /**
+   * @brief upon receiving monitor message
+   *
+   * @param monitor_message
+   */
+  void OnMonitor(
+      const apollo::common::monitor::MonitorMessage &monitor_message);
+
+  /**
+   * @brief check controller submodule input (local_view)
+   *
+   * @param local_view
+   * @return common::Status
+   */
+  common::Status CheckInput(apollo::control::LocalView *local_view);
+
+  /**
+   * @brief check time stamp
+   *
+   * @param local_view
+   * @return common::Status
+   */
+  common::Status CheckTimestamp(apollo::control::LocalView *local_view);
+
+  /**
+   * @brief check pad message
+   *
+   * @return common::Status
+   */
+  common::Status CheckPad();
+
+  common::Status ProducePreprocessorStatus(
+      apollo::control::Preprocessor *preprocessor_status);
 
  private:
   double init_time_ = 0.0;
+
+  bool estop_ = false;
+  std::string estop_reason_;
+  bool pad_received_ = false;
 
   localization::LocalizationEstimate latest_localization_;
   canbus::Chassis latest_chassis_;
@@ -92,17 +148,17 @@ class PreProcessSubmodule : public apollo::cyber::TimerComponent {
   std::shared_ptr<cyber::Reader<apollo::localization::LocalizationEstimate>>
       localization_reader_;
   std::shared_ptr<cyber::Reader<planning::ADCTrajectory>> trajectory_reader_;
-  std::shared_ptr<cyber::Writer<apollo::control::ControlCommand>>
-      control_command_writer_;
+
+  std::shared_ptr<cyber::Writer<apollo::control::Preprocessor>>
+      preprocessor_writer_;
 
   common::monitor::MonitorLogBuffer monitor_logger_buffer_;
 
-  // TODO(SHU): separate conf
   ControlCommonConf control_common_conf_;
 
-  LocalView local_view_;
+  apollo::control::LocalView *local_view_;
 };
 
-CYBER_REGISTER_COMPONENT(PreProcessSubmodule);
+CYBER_REGISTER_COMPONENT(PreprocessorSubmodule);
 }  // namespace control
 }  // namespace apollo

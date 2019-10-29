@@ -190,8 +190,13 @@ function local_volumes() {
     # Apollo root and bazel cache dirs are required.
     volumes="-v $APOLLO_ROOT_DIR:/apollo \
              -v $HOME/.cache:${DOCKER_HOME}/.cache"
+    APOLLO_TELEOP="${APOLLO_ROOT_DIR}/../apollo-teleop"
+    if [ -d ${APOLLO_TELEOP} ]; then
+        volumes="-v ${APOLLO_TELEOP}:/apollo/modules/teleop ${volumes}"
+    fi
     case "$(uname -s)" in
         Linux)
+
             case "$(lsb_release -r | cut -f2)" in
                 14.04)
                     volumes="${volumes} "
@@ -321,18 +326,19 @@ function main(){
 
     # Try to use GPU in container.
     DOCKER_RUN="docker run"
+    NVIDIA_DOCKER_DOC="https://github.com/NVIDIA/nvidia-docker/blob/master/README.md"
     if [ ${USE_GPU} -eq 1 ]; then
       DOCKER_VERSION=$(docker version --format '{{.Server.Version}}')
       if ! [ -z "$(which nvidia-docker)" ]; then
         DOCKER_RUN="nvidia-docker run"
-        warning "nvidia-docker is in deprecation! Please upgrade docker to 19.03+ according to "
-        warning "https://github.com/NVIDIA/nvidia-docker/blob/master/README.md#upgrading-with-nvidia-docker2-deprecated"
-      elif dpkg --compare-versions "${DOCKER_VERSION}" "ge" "19.03"; then
-        # For docker 19.03+, use `docker run --gpus all` to access GPU.
+        warning "nvidia-docker is in deprecation!"
+        warning "Please install latest docker and nvidia-container-toolkit: ${NVIDIA_DOCKER_DOC}"
+      elif ! [ -z "$(which nvidia-container-toolkit)" ]; then
         DOCKER_RUN="docker run --gpus all"
       else
         USE_GPU=0
-        warning "Cannot access GPU from container. Please upgrade docker to 19.03+"
+        warning "Cannot access GPU from container."
+        warning "Please install latest docker and nvidia-container-toolkit: ${NVIDIA_DOCKER_DOC}"
       fi
     fi
 

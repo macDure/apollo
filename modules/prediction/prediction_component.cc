@@ -63,7 +63,8 @@ void PredictionComponent::OfflineProcessFeatureProtoFile(
   for (const Feature& feature : features.feature()) {
     obstacles_container_ptr->InsertFeatureProto(feature);
     Obstacle* obstacle_ptr = obstacles_container_ptr->GetObstacle(feature.id());
-    EvaluatorManager::Instance()->EvaluateObstacle(obstacle_ptr);
+    EvaluatorManager::Instance()->EvaluateObstacle(obstacle_ptr,
+                                                   obstacles_container_ptr);
   }
 }
 
@@ -82,7 +83,7 @@ bool PredictionComponent::Init() {
           FLAGS_localization_topic, nullptr);
 
   storytelling_reader_ = node_->CreateReader<storytelling::Stories>(
-          FLAGS_storytelling_topic, nullptr);
+      FLAGS_storytelling_topic, nullptr);
 
   prediction_writer_ =
       node_->CreateWriter<PredictionObstacles>(FLAGS_prediction_topic);

@@ -51,13 +51,13 @@ namespace {
 using ObsTEdge = std::tuple<int, double, double, double, std::string>;
 }  // namespace
 
-STObstaclesProcessor::STObstaclesProcessor(const double planning_distance,
-                                           const double planning_time,
-                                           const PathData& path_data)
-    : planning_time_(planning_time),
-      planning_distance_(planning_distance),
-      path_data_(path_data),
-      vehicle_param_(common::VehicleConfigHelper::GetConfig().vehicle_param()) {
+void STObstaclesProcessor::Init(const double planning_distance,
+                                const double planning_time,
+                                const PathData& path_data) {
+  planning_time_ = planning_time;
+  planning_distance_ = planning_distance;
+  path_data_ = path_data;
+  vehicle_param_ = common::VehicleConfigHelper::GetConfig().vehicle_param();
   adc_path_init_s_ = path_data_.discretized_path().front().s();
 }
 
@@ -258,18 +258,6 @@ void STObstaclesProcessor::SetObstacleDecision(
   for (auto obs_decision : obstacle_decisions) {
     SetObstacleDecision(obs_decision.first, obs_decision.second);
   }
-}
-
-// TODO(jiacheng): implement this.
-std::pair<double, double> STObstaclesProcessor::GetRegularBoundaryFromObstacles(
-    double t) {
-  return {0.0, 0.0};
-}
-
-// TODO(jiacheng): implement this.
-std::pair<double, double>
-STObstaclesProcessor::GetFallbackBoundaryFromObstacles(double t) {
-  return {0.0, 0.0};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

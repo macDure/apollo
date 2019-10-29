@@ -18,14 +18,13 @@
  * @file
  **/
 
-#include "modules/planning/scenarios/park/emergency_pull_over/stage_slow_down.h"
+#include "modules/planning/scenarios/emergency/emergency_pull_over/stage_approach.h"
 
 #include <string>
 #include <vector>
 
 #include "cyber/common/log.h"
 
-#include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/planning/common/frame.h"
 #include "modules/planning/common/planning_context.h"
 #include "modules/planning/common/util/common.h"
@@ -39,46 +38,37 @@ namespace emergency_pull_over {
 
 using apollo::common::TrajectoryPoint;
 
-EmergencyPullOverStageSlowDown::EmergencyPullOverStageSlowDown(
+EmergencyPullOverStageApproach::EmergencyPullOverStageApproach(
     const ScenarioConfig::StageConfig& config)
     : Stage(config) {}
 
-Stage::StageStatus EmergencyPullOverStageSlowDown::Process(
+Stage::StageStatus EmergencyPullOverStageApproach::Process(
     const TrajectoryPoint& planning_init_point, Frame* frame) {
-  ADEBUG << "stage: SlowDown";
+  ADEBUG << "stage: Approach";
   CHECK_NOTNULL(frame);
 
   scenario_config_.CopyFrom(GetContext()->scenario_config);
 
-  // set speed_limit to slow down
-  const double adc_speed =
-      common::VehicleStateProvider::Instance()->linear_velocity();
-  const double target_speed =
-      adc_speed - scenario_config_.max_stop_deceleration() *
-                      scenario_config_.slow_down_deceleration_time();
-  // TODO(all) : to be updated
-  if (frame->mutable_reference_line_info()) {
-    auto* reference_line =
-        frame->mutable_reference_line_info()->front().mutable_reference_line();
-    reference_line->AddSpeedLimit(0.0, 100.0, target_speed);
-  }
-
   bool plan_ok = ExecuteTaskOnReferenceLine(planning_init_point, frame);
   if (!plan_ok) {
-    AERROR << "EmergencyPullOverStageSlowDown planning error";
+    AERROR << "EmergencyPullOverStageApproach planning error";
   }
 
-  // check slow enough
-  constexpr double kSpeedTolarence = 1.0;
-  if (adc_speed - target_speed <= kSpeedTolarence) {
+  auto& reference_line_info = frame->mutable_reference_line_info()->front();
+
+  // set vehicle signal
+  reference_line_info.SetEmergencyLight();
+
+  // TODO(all): to be implemented
+  if (1) {
     return FinishStage();
   }
 
   return StageStatus::RUNNING;
 }
 
-Stage::StageStatus EmergencyPullOverStageSlowDown::FinishStage() {
-  next_stage_ = ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH;
+Stage::StageStatus EmergencyPullOverStageApproach::FinishStage() {
+  next_stage_ = ScenarioConfig::EMERGENCY_PULL_OVER_STANDBY;
   return Stage::FINISHED;
 }
 

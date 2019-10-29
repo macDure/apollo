@@ -14,21 +14,28 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include "modules/prediction/submodules/scenario_submodule.h"
+/**
+ * @file piecewise_jerk_speed_nonlinear_optimizer.h
+ **/
+
+#pragma once
+
+#include "modules/planning/tasks/optimizers/speed_optimizer.h"
 
 namespace apollo {
-namespace prediction {
+namespace planning {
 
-bool ScenarioSubmodule::Init() {
-  // TODO(kechxu) implement
-  return true;
-}
+class PiecewiseJerkSpeedNonlinearOptimizer : public SpeedOptimizer {
+ public:
+  explicit PiecewiseJerkSpeedNonlinearOptimizer(const TaskConfig& config);
 
-bool ScenarioSubmodule::Proc(
-    const std::shared_ptr<PredictionContainerMessage>& container_message) {
-  // TODO(kechxu) implement
-  return true;
-}
+  virtual ~PiecewiseJerkSpeedNonlinearOptimizer() = default;
 
-}  // namespace prediction
+ private:
+  common::Status Process(const PathData& path_data,
+                         const common::TrajectoryPoint& init_point,
+                         SpeedData* const speed_data) override;
+};
+
+}  // namespace planning
 }  // namespace apollo

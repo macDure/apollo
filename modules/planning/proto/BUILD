@@ -167,6 +167,7 @@ proto_library(
         ":path_bounds_decider_config_proto_lib",
         ":path_lane_borrow_decider_config_proto_lib",
         ":path_reuse_decider_config_proto_lib",
+        ":piecewise_jerk_nonlinear_speed_config_proto_lib",
         ":piecewise_jerk_path_config_proto_lib",
         ":piecewise_jerk_speed_config_proto_lib",
         ":planner_open_space_config_proto_lib",
@@ -281,6 +282,20 @@ proto_library(
     name = "piecewise_jerk_speed_config_proto_lib",
     srcs = [
         "piecewise_jerk_speed_config.proto",
+    ],
+)
+
+cc_proto_library(
+    name = "piecewise_jerk_nonlinear_speed_config_proto",
+    deps = [
+        ":piecewise_jerk_nonlinear_speed_config_proto_lib",
+    ],
+)
+
+proto_library(
+    name = "piecewise_jerk_nonlinear_speed_config_proto_lib",
+    srcs = [
+        "piecewise_jerk_nonlinear_speed_config.proto",
     ],
 )
 

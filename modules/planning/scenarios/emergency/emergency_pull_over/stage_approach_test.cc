@@ -16,7 +16,7 @@
 
 #define protected public
 #define private public
-#include "modules/planning/scenarios/park/emergency_pull_over/stage_standby.h"
+#include "modules/planning/scenarios/emergency/emergency_pull_over/stage_approach.h"
 
 #include "gtest/gtest.h"
 
@@ -28,21 +28,21 @@ namespace planning {
 namespace scenario {
 namespace emergency_pull_over {
 
-class StageStandbyTest : public ::testing::Test {
+class StageApproachTest : public ::testing::Test {
  public:
   virtual void SetUp() {
-    config_.set_stage_type(ScenarioConfig::EMERGENCY_PULL_OVER_STANDBY);
+    config_.set_stage_type(ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH);
   }
 
  protected:
   ScenarioConfig::StageConfig config_;
 };
 
-TEST_F(StageStandbyTest, Init) {
-  EmergencyPullOverStageStandby emergency_pull_over_stage_standby(config_);
-  EXPECT_EQ(emergency_pull_over_stage_standby.Name(),
+TEST_F(StageApproachTest, Init) {
+  EmergencyPullOverStageApproach emergency_pull_over_stage_approach(config_);
+  EXPECT_EQ(emergency_pull_over_stage_approach.Name(),
             ScenarioConfig::StageType_Name(
-                ScenarioConfig::EMERGENCY_PULL_OVER_STANDBY));
+                ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH));
 }
 
 }  // namespace emergency_pull_over

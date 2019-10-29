@@ -14,43 +14,40 @@
  * limitations under the License.
  *****************************************************************************/
 
-/**
- * @file
- **/
+#define protected public
+#define private public
+#include "modules/planning/scenarios/park/pull_over/stage_retry_approach_parking.h"
 
-#pragma once
+#include "gtest/gtest.h"
 
-#include "modules/planning/proto/planning_config.pb.h"
-
-#include "modules/planning/scenarios/park/emergency_pull_over/emergency_pull_over_scenario.h"
-#include "modules/planning/scenarios/stage.h"
+#include "cyber/common/file.h"
+#include "cyber/common/log.h"
+#include "modules/planning/common/planning_gflags.h"
 
 namespace apollo {
 namespace planning {
 namespace scenario {
-namespace emergency_pull_over {
+namespace pull_over {
 
-struct EmergencyPullOverContext;
-
-class EmergencyPullOverStageSlowDown : public Stage {
+class PullOverStageRetryApproachParkingTest : public ::testing::Test {
  public:
-  explicit EmergencyPullOverStageSlowDown(
-      const ScenarioConfig::StageConfig& config);
-
-  StageStatus Process(const common::TrajectoryPoint& planning_init_point,
-                      Frame* frame) override;
-
-  EmergencyPullOverContext* GetContext() {
-    return Stage::GetContextAs<EmergencyPullOverContext>();
+  virtual void SetUp() {
+    config_.set_stage_type(ScenarioConfig::PULL_OVER_RETRY_APPROACH_PARKING);
   }
 
-  Stage::StageStatus FinishStage();
-
- private:
-  ScenarioEmergencyPullOverConfig scenario_config_;
+ protected:
+  ScenarioConfig::StageConfig config_;
 };
 
-}  // namespace emergency_pull_over
+TEST_F(PullOverStageRetryApproachParkingTest, Init) {
+  PullOverStageRetryApproachParking pull_over_stage_retry_approach_parking(
+      config_);
+  EXPECT_EQ(pull_over_stage_retry_approach_parking.Name(),
+            ScenarioConfig::StageType_Name(
+                ScenarioConfig::PULL_OVER_RETRY_APPROACH_PARKING));
+}
+
+}  // namespace pull_over
 }  // namespace scenario
 }  // namespace planning
 }  // namespace apollo

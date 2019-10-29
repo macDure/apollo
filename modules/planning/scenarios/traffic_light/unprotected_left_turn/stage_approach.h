@@ -22,35 +22,38 @@
 
 #include "modules/planning/proto/planning_config.pb.h"
 
-#include "modules/planning/scenarios/park/emergency_pull_over/emergency_pull_over_scenario.h"
 #include "modules/planning/scenarios/stage.h"
+#include "modules/planning/scenarios/traffic_light/unprotected_left_turn/traffic_light_unprotected_left_turn_scenario.h"
 
 namespace apollo {
 namespace planning {
 namespace scenario {
-namespace emergency_pull_over {
+namespace traffic_light {
 
-struct EmergencyPullOverContext;
+struct TrafficLightUnprotectedLeftTurnContext;
 
-class EmergencyPullOverStageApproach : public Stage {
+class TrafficLightUnprotectedLeftTurnStageApproach : public Stage {
  public:
-  explicit EmergencyPullOverStageApproach(
-      const ScenarioConfig::StageConfig& config);
-
-  StageStatus Process(const common::TrajectoryPoint& planning_init_point,
-                      Frame* frame) override;
-
-  EmergencyPullOverContext* GetContext() {
-    return Stage::GetContextAs<EmergencyPullOverContext>();
-  }
-
-  Stage::StageStatus FinishStage();
+  explicit TrafficLightUnprotectedLeftTurnStageApproach(
+      const ScenarioConfig::StageConfig& config)
+      : Stage(config) {}
 
  private:
-  ScenarioEmergencyPullOverConfig scenario_config_;
+  Stage::StageStatus Process(const common::TrajectoryPoint& planning_init_point,
+                             Frame* frame) override;
+
+  TrafficLightUnprotectedLeftTurnContext* GetContext() {
+    return Stage::GetContextAs<TrafficLightUnprotectedLeftTurnContext>();
+  }
+
+ private:
+  Stage::StageStatus FinishStage(Frame* frame);
+
+ private:
+  ScenarioTrafficLightUnprotectedLeftTurnConfig scenario_config_;
 };
 
-}  // namespace emergency_pull_over
+}  // namespace traffic_light
 }  // namespace scenario
 }  // namespace planning
 }  // namespace apollo

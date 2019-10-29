@@ -14,46 +14,40 @@
  * limitations under the License.
  *****************************************************************************/
 
-/**
- * @file
- **/
 #define protected public
 #define private public
-#include "modules/planning/scenarios/park/emergency_pull_over/emergency_pull_over_scenario.h"
+#include "modules/planning/scenarios/bare_intersection/unprotected/stage_approach.h"
 
 #include "gtest/gtest.h"
 
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
-#include "modules/planning/common/planning_gflags.h"
 
 namespace apollo {
 namespace planning {
 namespace scenario {
-namespace emergency_pull_over {
+namespace bare_intersection {
 
-class EmergencyPullOverScenarioTest : public ::testing::Test {
+class StageApproachTest : public ::testing::Test {
  public:
-  virtual void SetUp() {}
+  virtual void SetUp() {
+    config_.set_stage_type(
+        ScenarioConfig::BARE_INTERSECTION_UNPROTECTED_APPROACH);
+  }
 
  protected:
-  std::unique_ptr<EmergencyPullOverScenario> scenario_;
+  ScenarioConfig::StageConfig config_;
 };
 
-TEST_F(EmergencyPullOverScenarioTest, Init) {
-  FLAGS_scenario_emergency_pull_over_config_file =
-      "/apollo/modules/planning/conf/scenario"
-      "/emergency_pull_over_config.pb.txt";
-
-  ScenarioConfig config;
-  EXPECT_TRUE(apollo::cyber::common::GetProtoFromFile(
-      FLAGS_scenario_emergency_pull_over_config_file, &config));
-  ScenarioContext context;
-  scenario_.reset(new EmergencyPullOverScenario(config, &context));
-  EXPECT_EQ(scenario_->scenario_type(), ScenarioConfig::EMERGENCY_PULL_OVER);
+TEST_F(StageApproachTest, Init) {
+  BareIntersectionUnprotectedStageApproach
+      bare_intersection_unprotected_stage_approach(config_);
+  EXPECT_EQ(bare_intersection_unprotected_stage_approach.Name(),
+            ScenarioConfig::StageType_Name(
+                ScenarioConfig::BARE_INTERSECTION_UNPROTECTED_APPROACH));
 }
 
-}  // namespace emergency_pull_over
+}  // namespace bare_intersection
 }  // namespace scenario
 }  // namespace planning
 }  // namespace apollo

@@ -16,36 +16,39 @@
 
 #define protected public
 #define private public
-#include "modules/planning/scenarios/park/emergency_pull_over/stage_approach.h"
+#include "modules/planning/scenarios/traffic_light/unprotected_right_turn/stage_creep.h"
 
 #include "gtest/gtest.h"
 
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
+#include "modules/planning/common/planning_gflags.h"
 
 namespace apollo {
 namespace planning {
 namespace scenario {
-namespace emergency_pull_over {
+namespace traffic_light {
 
-class StageApproachTest : public ::testing::Test {
+class TrafficLightUnprotectedRightTurnStageCreepTest : public ::testing::Test {
  public:
   virtual void SetUp() {
-    config_.set_stage_type(ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH);
+    config_.set_stage_type(
+        ScenarioConfig::TRAFFIC_LIGHT_UNPROTECTED_RIGHT_TURN_STOP);
   }
 
  protected:
   ScenarioConfig::StageConfig config_;
 };
 
-TEST_F(StageApproachTest, Init) {
-  EmergencyPullOverStageApproach emergency_pull_over_stage_approach(config_);
-  EXPECT_EQ(emergency_pull_over_stage_approach.Name(),
+TEST_F(TrafficLightUnprotectedRightTurnStageCreepTest, Init) {
+  TrafficLightUnprotectedRightTurnStageCreep
+      traffic_light_unprotected_right_turn_stage_creep(config_);
+  EXPECT_EQ(traffic_light_unprotected_right_turn_stage_creep.Name(),
             ScenarioConfig::StageType_Name(
-                ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH));
+                ScenarioConfig::TRAFFIC_LIGHT_UNPROTECTED_RIGHT_TURN_STOP));
 }
 
-}  // namespace emergency_pull_over
+}  // namespace traffic_light
 }  // namespace scenario
 }  // namespace planning
 }  // namespace apollo
