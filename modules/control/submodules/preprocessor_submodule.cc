@@ -15,7 +15,7 @@
  *****************************************************************************/
 
 /**
- * @file processor_submodule.cc
+ * @file preprocessor_submodule.cc
  */
 
 #include "modules/control/submodules/preprocessor_submodule.h"
@@ -34,7 +34,6 @@ using apollo::common::ErrorCode;
 using apollo::common::Status;
 using apollo::common::VehicleStateProvider;
 using apollo::common::time::Clock;
-using apollo::common::util::StrCat;
 using apollo::localization::LocalizationEstimate;
 using apollo::planning::ADCTrajectory;
 
@@ -56,7 +55,6 @@ bool PreprocessorSubmodule::Init() {
   }
 
   /*  initialize readers and writers */
-  // TODO(SHU): add writer of preprocessor
   cyber::ReaderConfig chassis_reader_config;
   chassis_reader_config.channel_name = FLAGS_chassis_topic;
   chassis_reader_config.pending_queue_size = FLAGS_chassis_pending_queue_size;
@@ -136,6 +134,15 @@ bool PreprocessorSubmodule::Proc() {
   if (pad_msg != nullptr) {
     OnPad(pad_msg);
   }
+
+  Preprocessor control_preprocessor;
+  Status status = ProducePreprocessorStatus(&control_preprocessor);
+  AERROR_IF(!status.ok()) << "Failed to produce control preprocessor:"
+                          << status.error_message();
+  control_preprocessor.set_received_pad_msg(pad_received_);
+  control_preprocessor.set_allocated_pad_msg(&pad_msg_);
+  preprocessor_writer_->Write(
+      std::make_shared<Preprocessor>(control_preprocessor));
   return true;
 }
 
@@ -184,16 +191,16 @@ Status PreprocessorSubmodule::ProducePreprocessorStatus(
 
   if (local_view_->trajectory().estop().is_estop()) {
     estop_ = true;
-    estop_reason_ = StrCat("estop from planning : ",
-                           local_view_->trajectory().estop().reason());
+    estop_reason_ = absl::StrCat("estop from planning : ",
+                                 local_view_->trajectory().estop().reason());
   }
 
   if (local_view_->trajectory().trajectory_point().empty()) {
     AWARN_EVERY(100) << "planning has no trajectory point. ";
     estop_ = true;
     estop_reason_ =
-        StrCat("estop for empty planning trajectory, planning headers: ",
-               local_view_->trajectory().header().ShortDebugString());
+        absl::StrCat("estop for empty planning trajectory, planning headers: ",
+                     local_view_->trajectory().header().ShortDebugString());
   }
 
   if (FLAGS_enable_gear_drive_negative_speed_protection) {
@@ -223,6 +230,9 @@ Status PreprocessorSubmodule::ProducePreprocessorStatus(
       debug->mutable_latest_replan_trajectory_header()->CopyFrom(
           latest_replan_trajectory_header_);
     }
+  } else {
+    preprocessor_status->set_estop(estop_);
+    preprocessor_status->set_estop_reason(estop_reason_);
   }
 
   return status;
@@ -279,9 +289,9 @@ Status PreprocessorSubmodule::CheckInput(LocalView *local_view) {
   if (!local_view->trajectory().estop().is_estop() &&
       local_view->trajectory().trajectory_point().empty()) {
     AWARN_EVERY(100) << "planning has no trajectory point. ";
-    const std::string msg = common::util::StrCat(
-        "planning has no trajectory point. planning_seq_num: ",
-        local_view->trajectory().header().sequence_num());
+    const std::string msg =
+        absl::StrCat("planning has no trajectory point. planning_seq_num: ",
+                     local_view->trajectory().header().sequence_num());
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, msg);
   }
 

@@ -20,6 +20,7 @@
 
 #include "modules/planning/scenarios/emergency/emergency_pull_over/stage_slow_down.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -53,11 +54,15 @@ Stage::StageStatus EmergencyPullOverStageSlowDown::Process(
   // set cruise_speed to slow down
   const double adc_speed =
       common::VehicleStateProvider::Instance()->linear_velocity();
-  const double target_speed =
-      adc_speed - scenario_config_.max_stop_deceleration() *
-                      scenario_config_.slow_down_deceleration_time();
+  double target_slow_down_speed = GetContext()->target_slow_down_speed;
+  if (target_slow_down_speed <= 0) {
+    target_slow_down_speed = GetContext()->target_slow_down_speed = std::max(
+        scenario_config_.target_slow_down_speed(),
+        adc_speed - scenario_config_.max_stop_deceleration() *
+                        scenario_config_.slow_down_deceleration_time());
+  }
   auto& reference_line_info = frame->mutable_reference_line_info()->front();
-  reference_line_info.SetCruiseSpeed(target_speed);
+  reference_line_info.SetCruiseSpeed(target_slow_down_speed);
 
   bool plan_ok = ExecuteTaskOnReferenceLine(planning_init_point, frame);
   if (!plan_ok) {
@@ -66,7 +71,7 @@ Stage::StageStatus EmergencyPullOverStageSlowDown::Process(
 
   // check slow enough
   constexpr double kSpeedTolarence = 1.0;
-  if (adc_speed - target_speed <= kSpeedTolarence) {
+  if (adc_speed - target_slow_down_speed <= kSpeedTolarence) {
     return FinishStage();
   }
 
@@ -74,6 +79,11 @@ Stage::StageStatus EmergencyPullOverStageSlowDown::Process(
 }
 
 Stage::StageStatus EmergencyPullOverStageSlowDown::FinishStage() {
+  auto* pull_over_status = PlanningContext::Instance()
+                               ->mutable_planning_status()
+                               ->mutable_pull_over();
+  pull_over_status->set_plan_pull_over_path(true);
+
   next_stage_ = ScenarioConfig::EMERGENCY_PULL_OVER_APPROACH;
   return Stage::FINISHED;
 }

@@ -37,24 +37,61 @@ namespace scenario {
 namespace emergency_pull_over {
 
 using apollo::common::TrajectoryPoint;
+using apollo::common::VehicleConfigHelper;
 
 Stage::StageStatus EmergencyPullOverStageStandby::Process(
     const TrajectoryPoint& planning_init_point, Frame* frame) {
-  ADEBUG << "stage: Stop";
+  ADEBUG << "stage: Standby";
   CHECK_NOTNULL(frame);
 
   scenario_config_.CopyFrom(GetContext()->scenario_config);
+
+  auto& reference_line_info = frame->mutable_reference_line_info()->front();
+
+  // set vehicle signal
+  reference_line_info.SetEmergencyLight();
+
+  // reset cruise_speed
+  reference_line_info.SetCruiseSpeed(FLAGS_default_cruise_speed);
+
+  // add a stop fence
+  const auto& pull_over_status =
+      PlanningContext::Instance()->planning_status().pull_over();
+  if (pull_over_status.has_position() && pull_over_status.position().has_x() &&
+      pull_over_status.position().has_y()) {
+    const auto& reference_line_info = frame->reference_line_info().front();
+    const auto& reference_line = reference_line_info.reference_line();
+    common::SLPoint pull_over_sl;
+    reference_line.XYToSL(
+        {pull_over_status.position().x(), pull_over_status.position().y()},
+        &pull_over_sl);
+    const double stop_distance = scenario_config_.stop_distance();
+    double stop_line_s =
+        pull_over_sl.s() + stop_distance +
+        VehicleConfigHelper::GetConfig().vehicle_param().front_edge_to_center();
+    const double adc_front_edge_s = reference_line_info.AdcSlBoundary().end_s();
+    double distance = stop_line_s - adc_front_edge_s;
+    if (distance <= 0.0) {
+      // push stop fence further
+      stop_line_s = adc_front_edge_s + stop_distance;
+    }
+
+    const std::string virtual_obstacle_id = "EMERGENCY_PULL_OVER";
+    const std::vector<std::string> wait_for_obstacle_ids;
+    planning::util::BuildStopDecision(
+        virtual_obstacle_id, stop_line_s, stop_distance,
+        StopReasonCode::STOP_REASON_PULL_OVER, wait_for_obstacle_ids,
+        "EMERGENCY_PULL_OVER-scenario", frame,
+        &(frame->mutable_reference_line_info()->front()));
+
+    ADEBUG << "Build a stop fence for emergency_pull_over: id["
+           << virtual_obstacle_id << "] s[" << stop_line_s << "]";
+  }
 
   bool plan_ok = ExecuteTaskOnReferenceLine(planning_init_point, frame);
   if (!plan_ok) {
     AERROR << "EmergencyPullOverStageStandby planning error";
   }
-
-  // reset cruise_speed
-  auto& reference_line_info = frame->mutable_reference_line_info()->front();
-  reference_line_info.SetCruiseSpeed(FLAGS_default_cruise_speed);
-
-  // TODO(all): add a stop fence ahead of ADC
 
   return Stage::RUNNING;
 }

@@ -43,6 +43,7 @@ namespace planning {
 
 constexpr double kADCSafetyLBuffer = 0.1;
 constexpr double kSIgnoreThreshold = 0.01;
+constexpr double kOvertakenObsCautionTime = 0.5;
 
 class STObstaclesProcessor {
  public:
@@ -74,6 +75,15 @@ class STObstaclesProcessor {
           std::vector<std::pair<std::string, ObjectDecisionType>>>* const
           available_obs_decisions);
 
+  /** @brief Provided that decisions for all existing obstacles are made, get
+   * the speed limiting info from limiting st-obstacles.
+   * @param Time t.
+   * @param The actual limiting speed-info: (lower, upper)
+   * @return True if there is speed limiting info; otherwise, false.
+   */
+  bool GetLimitingSpeedInfo(
+      double t, std::pair<double, double>* const limiting_speed_info);
+
   /** @brief Set the decision for a given obstacle.
    */
   void SetObstacleDecision(const std::string& obs_id,
@@ -94,7 +104,9 @@ class STObstaclesProcessor {
    */
   bool ComputeObstacleSTBoundary(const Obstacle& obstacle,
                                  std::vector<STPoint>* const lower_points,
-                                 std::vector<STPoint>* const upper_points);
+                                 std::vector<STPoint>* const upper_points,
+                                 bool* const is_caution_obstacle,
+                                 double* const obs_caution_end_t);
 
   /** @brief Given ADC's path and an obstacle instance at a certain timestep,
    * get the upper and lower s that ADC might overlap with the obs instance.
@@ -173,6 +185,12 @@ class STObstaclesProcessor {
                                                const double obs_s_max,
                                                const double s) const;
 
+  /** @brief Check if a given s falls within adc's low road right segment.
+   * @param A certain S.
+   * @return True if within; false otherwise.
+   */
+  bool IsSWithinADCLowRoadRightSegment(const double s) const;
+
  private:
   double planning_time_;
   double planning_distance_;
@@ -188,6 +206,8 @@ class STObstaclesProcessor {
 
   std::unordered_map<std::string, STBoundary> obs_id_to_st_boundary_;
   std::unordered_map<std::string, ObjectDecisionType> obs_id_to_decision_;
+
+  std::vector<std::pair<double, double>> adc_low_road_right_segments_;
 };
 
 }  // namespace planning

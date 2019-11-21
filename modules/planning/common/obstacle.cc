@@ -229,7 +229,7 @@ std::list<std::unique_ptr<Obstacle>> Obstacle::CreateObstacles(
       }
 
       const std::string obstacle_id =
-          apollo::common::util::StrCat(perception_id, "_", trajectory_index);
+          absl::StrCat(perception_id, "_", trajectory_index);
       obstacles.emplace_back(
           new Obstacle(obstacle_id, prediction_obstacle.perception_obstacle(),
                        trajectory, prediction_obstacle.priority().priority(),
@@ -684,7 +684,7 @@ const std::string Obstacle::DebugString() const {
   }
   if (longitudinal_decision_.object_tag_case() !=
       ObjectDecisionType::OBJECT_TAG_NOT_SET) {
-    ss << "longitutional decision: "
+    ss << "longitudinal decision: "
        << longitudinal_decision_.ShortDebugString();
   }
   return ss.str();

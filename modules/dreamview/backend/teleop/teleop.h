@@ -22,10 +22,11 @@
 #include "third_party/json/json.hpp"
 
 #ifdef TELEOP
+#include "modules/planning/proto/pad_msg.pb.h"
+#include "modules/planning/proto/planning.pb.h"
 #include "modules/teleop/network/proto/modem_info.pb.h"
 #include "modules/teleop/teleop/proto/daemon_service_cmd.pb.h"
 #include "modules/teleop/teleop/proto/daemon_service_rpt.pb.h"
-#include "modules/planning/proto/pad_msg.pb.h"
 #endif
 
 #include "modules/dreamview/backend/handlers/websocket_handler.h"
@@ -44,6 +45,16 @@ class TeleopService {
   void SendStatus(WebSocketHandler::Connection *conn);
 
 #ifdef TELEOP
+  // send a command to the remote daemon to start or stop
+  // video encoders and voip encoders
+  void SendAudioStreamCmd(bool start_stop);
+  void SendMicStreamCmd(bool start_stop);
+  void SendVideoStreamCmd(bool start_stop);
+  // planner commands
+  void SendEstopCmd();
+  void SendPullOverCmd();
+  void SendResumeCruiseCmd();
+
   void UpdateModemInfo(
       const std::shared_ptr<modules::teleop::network::ModemInfo> &modem_info);
 #endif
@@ -61,8 +72,12 @@ class TeleopService {
   std::shared_ptr<cyber::Reader<modules::teleop::network::ModemInfo>>
       modem2_info_reader_;
   // modem info callback
-  void UpdateModem(const std::string &modem_id,
-    const std::shared_ptr<modules::teleop::network::ModemInfo> &modem_info);
+  void UpdateModem(
+      const std::string &modem_id,
+      const std::shared_ptr<modules::teleop::network::ModemInfo> &modem_info);
+  // planning message reader
+  std::shared_ptr<cyber::Reader<apollo::planning::ADCTrajectory>>
+      planning_reader_;
 
   // daemon report readers and callback
   void UpdateCarDaemonRpt(
@@ -70,19 +85,20 @@ class TeleopService {
   void UpdateOperatorDaemonRpt(
       const std::shared_ptr<modules::teleop::teleop::DaemonServiceRpt> &rpt);
   std::shared_ptr<cyber::Reader<modules::teleop::teleop::DaemonServiceRpt>>
-      car_daemon_rpt_reader_;
+      remote_daemon_rpt_reader_;
   std::shared_ptr<cyber::Reader<modules::teleop::teleop::DaemonServiceRpt>>
-      operator_daemon_rpt_reader_;
+      local_daemon_rpt_reader_;
   // daemon commands writers
   std::shared_ptr<cyber::Writer<modules::teleop::teleop::DaemonServiceCmd>>
-      car_daemon_cmd_writer_;
+      remote_daemon_cmd_writer_;
   std::shared_ptr<cyber::Writer<modules::teleop::teleop::DaemonServiceCmd>>
-      operator_daemon_cmd_writer_;
+      local_daemon_cmd_writer_;
 
   // planning driving actions  and feedback
   std::shared_ptr<cyber::Writer<apollo::planning::PadMessage>>
       pad_message_writer_;
-
+  void UpdatePlanning(
+      const std::shared_ptr<apollo::planning::ADCTrajectory> &msg);
 #endif
 
   // Store teleop status

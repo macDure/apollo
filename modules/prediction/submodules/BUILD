@@ -27,9 +27,9 @@ cc_library(
 )
 
 cc_library(
-    name = "container_output",
-    srcs = ["container_output.cc"],
-    hdrs = ["container_output.h"],
+    name = "submodule_output",
+    srcs = ["submodule_output.cc"],
+    hdrs = ["submodule_output.h"],
     copts = [
         "-DMODULE_NAME=\\\"prediction\\\"",
     ],
@@ -38,6 +38,30 @@ cc_library(
         "//modules/perception/proto:perception_proto",
         "//modules/prediction/common:prediction_gflags",
         "//modules/prediction/container/obstacles:obstacle",
+    ],
+)
+
+cc_library(
+    name = "container_output",
+    srcs = ["container_output.cc"],
+    hdrs = ["container_output.h"],
+    copts = [
+        "-DMODULE_NAME=\\\"prediction\\\"",
+    ],
+    deps = [
+        "//modules/prediction/submodules:submodule_output",
+    ],
+)
+
+cc_library(
+    name = "evaluator_output",
+    srcs = ["evaluator_output.cc"],
+    hdrs = ["evaluator_output.h"],
+    copts = [
+        "-DMODULE_NAME=\\\"prediction\\\"",
+    ],
+    deps = [
+        "//modules/prediction/submodules:submodule_output",
     ],
 )
 
@@ -66,7 +90,7 @@ cc_library(
         "//modules/prediction/common:message_process",
         "//modules/prediction/common:prediction_gflags",
         "//modules/prediction/evaluator:evaluator_manager",
-        "//modules/prediction/submodules:container_output",
+        "//modules/prediction/submodules:evaluator_output",
     ],
 )
 
@@ -75,6 +99,53 @@ cc_binary(
     linkshared = True,
     linkstatic = False,
     deps = [":evaluator_submodule_lib"],
+)
+
+cc_library(
+    name = "predictor_submodule_lib",
+    srcs = ["predictor_submodule.cc"],
+    hdrs = [
+        "predictor_submodule.h",
+    ],
+    copts = [
+        "-DMODULE_NAME=\\\"prediction\\\"",
+    ],
+    deps = [
+        "//cyber",
+        "//modules/common/adapters:adapter_gflags",
+        "//modules/common/adapters/proto:adapter_config_proto",
+        "//modules/common/time",
+        "//modules/perception/proto:perception_proto",
+        "//modules/prediction/common:message_process",
+        "//modules/prediction/common:prediction_gflags",
+        "//modules/prediction/container/adc_trajectory:adc_trajectory_container",
+        "//modules/prediction/predictor:predictor_manager",
+        "//modules/prediction/proto:prediction_proto",
+        "//modules/prediction/submodules:evaluator_output",
+    ],
+)
+
+cc_binary(
+    name = "predictor_submodule.so",
+    linkshared = True,
+    linkstatic = False,
+    deps = [":evaluator_submodule_lib"],
+)
+
+cc_library(
+    name = "prediction_lego_lib",
+    deps = [
+        ":container_submodule_lib",
+        ":evaluator_submodule_lib",
+        ":predictor_submodule_lib",
+    ],
+)
+
+cc_binary(
+    name = "prediction_lego.so",
+    linkshared = True,
+    linkstatic = False,
+    deps = [":prediction_lego_lib"],
 )
 
 cpplint()

@@ -26,9 +26,9 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "modules/common/configs/vehicle_config_helper.h"
-#include "modules/common/util/string_util.h"
-#include "modules/common/util/util.h"
+#include "modules/common/util/point_factory.h"
 #include "modules/map/hdmap/hdmap_util.h"
 #include "modules/planning/common/path_boundary.h"
 #include "modules/planning/common/planning_context.h"
@@ -41,7 +41,6 @@ namespace planning {
 using apollo::common::ErrorCode;
 using apollo::common::Status;
 using apollo::common::VehicleConfigHelper;
-using apollo::common::util::StrCat;
 using apollo::hdmap::HDMapUtil;
 
 namespace {
@@ -108,14 +107,8 @@ Status PathBoundsDecider::Process(
   auto* pull_over_status = PlanningContext::Instance()
                                ->mutable_planning_status()
                                ->mutable_pull_over();
-  auto* emergency_pull_over_status = PlanningContext::Instance()
-                                         ->mutable_planning_status()
-                                         ->mutable_emergency_pull_over();
-  is_in_pull_over_scenario_ = pull_over_status->is_in_pull_over_scenario();
-  is_in_emergency_pull_over_scenario_ =
-      emergency_pull_over_status->is_in_emergency_pull_over_scenario();
-
-  if (is_in_pull_over_scenario_ || is_in_emergency_pull_over_scenario_) {
+  const bool plan_pull_over_path = pull_over_status->plan_pull_over_path();
+  if (plan_pull_over_path) {
     PathBound pull_over_path_bound;
     Status ret = GeneratePullOverPathBound(*frame, *reference_line_info,
                                            &pull_over_path_bound);
@@ -141,9 +134,19 @@ Status PathBoundsDecider::Process(
       reference_line_info->SetCandidatePathBoundaries(
           std::move(candidate_path_boundaries));
       ADEBUG << "Completed pullover and fallback path boundaries generation.";
-      *(reference_line_info->mutable_debug()
-            ->mutable_planning_data()
-            ->mutable_pull_over_status()) = *pull_over_status;
+
+      // set debug info in planning_data
+      auto* pull_over_debug = reference_line_info->mutable_debug()
+                                  ->mutable_planning_data()
+                                  ->mutable_pull_over();
+      pull_over_debug->mutable_position()->CopyFrom(
+          pull_over_status->position());
+      pull_over_debug->set_theta(pull_over_status->theta());
+      pull_over_debug->set_length_front(pull_over_status->length_front());
+      pull_over_debug->set_length_back(pull_over_status->length_back());
+      pull_over_debug->set_width_left(pull_over_status->width_left());
+      pull_over_debug->set_width_right(pull_over_status->width_right());
+
       return Status::OK();
     }
   }
@@ -243,7 +246,7 @@ Status PathBoundsDecider::Process(
     }
     // RecordDebugInfo(regular_path_bound, "", reference_line_info);
     candidate_path_boundaries.back().set_label(
-        StrCat("regular/", path_label, "/", borrow_lane_type));
+        absl::StrCat("regular/", path_label, "/", borrow_lane_type));
     candidate_path_boundaries.back().set_blocking_obstacle_id(
         blocking_obstacle_id);
   }
@@ -310,6 +313,9 @@ Status PathBoundsDecider::GenerateRegularPathBound(
     return Status(ErrorCode::PLANNING_ERROR, msg);
   }
   // PathBoundsDebugString(*path_bound);
+
+  // TODO(jiacheng): once ready, limit the path boundary based on the
+  //                 actual road boundary to avoid getting off-road.
 
   // 3. Fine-tune the boundary based on static obstacles
   PathBound temp_path_bound = *path_bound;
@@ -414,68 +420,32 @@ Status PathBoundsDecider::GeneratePullOverPathBound(
   auto* pull_over_status = PlanningContext::Instance()
                                ->mutable_planning_status()
                                ->mutable_pull_over();
-  auto* emergency_pull_over_status = PlanningContext::Instance()
-                                         ->mutable_planning_status()
-                                         ->mutable_emergency_pull_over();
   // If already found a pull-over position, simply check if it's valid.
   int curr_idx = -1;
-  if (emergency_pull_over_status->has_position()) {
-    curr_idx = IsPointWithinPathBound(
-        reference_line_info, emergency_pull_over_status->position().x(),
-        emergency_pull_over_status->position().y(), *path_bound);
-  } else if (pull_over_status->is_feasible() &&
-             pull_over_status->has_position()) {
+  if (pull_over_status->has_position()) {
     curr_idx = IsPointWithinPathBound(
         reference_line_info, pull_over_status->position().x(),
         pull_over_status->position().y(), *path_bound);
   }
-  if (curr_idx >= 0) {
-    // Trim path-bound properly.
-    while (static_cast<int>(path_bound->size()) - 1 >
-           curr_idx + kNumExtraTailBoundPoint) {
-      path_bound->pop_back();
-    }
-    for (size_t idx = curr_idx + 1; idx < path_bound->size(); ++idx) {
-      std::get<1>((*path_bound)[idx]) = std::get<1>((*path_bound)[curr_idx]);
-      std::get<2>((*path_bound)[idx]) = std::get<2>((*path_bound)[curr_idx]);
-    }
-    // PathBoundsDebugString(*path_bound);
-    return Status::OK();
-  }
 
   // If haven't found a pull-over position, search for one.
-  std::tuple<double, double, double, int> pull_over_configuration;
-  if (!SearchPullOverPosition(frame, reference_line_info, *path_bound,
-                              &pull_over_configuration)) {
-    if (is_in_emergency_pull_over_scenario_) {
-      emergency_pull_over_status->Clear();
-    } else if (is_in_pull_over_scenario_) {
-      pull_over_status->Clear();
-      pull_over_status->set_is_feasible(false);
-    }
-    const std::string msg = "Failed to find a proper pull-over position.";
-    AERROR << msg;
-    return Status(ErrorCode::PLANNING_ERROR, msg);
-  }
-  // If have found a pull-over position, update planning-context,
-  // and trim the path-bound properly.
-  if (is_in_emergency_pull_over_scenario_) {
-    emergency_pull_over_status->Clear();
-    emergency_pull_over_status->mutable_position()->set_x(
-        std::get<0>(pull_over_configuration));
-    emergency_pull_over_status->mutable_position()->set_y(
-        std::get<1>(pull_over_configuration));
-    emergency_pull_over_status->mutable_position()->set_z(0.0);
-    emergency_pull_over_status->set_theta(std::get<2>(pull_over_configuration));
-
-    ADEBUG << "Emergency Pull Over: x["
-           << emergency_pull_over_status->position().x() << "] y["
-           << emergency_pull_over_status->position().y() << "] theta["
-           << emergency_pull_over_status->theta() << "]";
-
-  } else if (is_in_pull_over_scenario_) {
+  if (curr_idx < 0) {
+    auto pull_over_type = pull_over_status->pull_over_type();
     pull_over_status->Clear();
-    pull_over_status->set_is_feasible(true);
+    pull_over_status->set_pull_over_type(pull_over_type);
+    pull_over_status->set_plan_pull_over_path(true);
+
+    std::tuple<double, double, double, int> pull_over_configuration;
+    if (!SearchPullOverPosition(frame, reference_line_info, *path_bound,
+                                &pull_over_configuration)) {
+      const std::string msg = "Failed to find a proper pull-over position.";
+      AERROR << msg;
+      return Status(ErrorCode::PLANNING_ERROR, msg);
+    }
+
+    curr_idx = std::get<3>(pull_over_configuration);
+
+    // If have found a pull-over position, update planning-context
     pull_over_status->mutable_position()->set_x(
         std::get<0>(pull_over_configuration));
     pull_over_status->mutable_position()->set_y(
@@ -494,7 +464,7 @@ Status PathBoundsDecider::GeneratePullOverPathBound(
            << pull_over_status->theta() << "]";
   }
 
-  curr_idx = std::get<3>(pull_over_configuration);
+  // Trim path-bound properly
   while (static_cast<int>(path_bound->size()) - 1 >
          curr_idx + kNumExtraTailBoundPoint) {
     path_bound->pop_back();
@@ -608,9 +578,16 @@ bool PathBoundsDecider::FindDestinationPullOverS(
 bool PathBoundsDecider::FindEmergencyPullOverS(
     const ReferenceLineInfo& reference_line_info, double* pull_over_s) {
   const double adc_end_s = reference_line_info.AdcSlBoundary().end_s();
+  const double min_turn_radius = common::VehicleConfigHelper::Instance()
+                                     ->GetConfig()
+                                     .vehicle_param()
+                                     .min_turn_radius();
+  const double adjust_factor =
+      config_.path_bounds_decider_config()
+          .pull_over_approach_lon_distance_adjust_factor();
+  const double pull_over_distance = min_turn_radius * 2 * adjust_factor;
+  *pull_over_s = adc_end_s + pull_over_distance;
 
-  // TODO(all): to be implemented
-  *pull_over_s = adc_end_s + 10.0;
   return true;
 }
 
@@ -618,24 +595,30 @@ bool PathBoundsDecider::SearchPullOverPosition(
     const Frame& frame, const ReferenceLineInfo& reference_line_info,
     const std::vector<std::tuple<double, double, double>>& path_bound,
     std::tuple<double, double, double, int>* const pull_over_configuration) {
+  const auto& pull_over_status =
+      PlanningContext::Instance()->planning_status().pull_over();
+
+  // search direction
+  bool search_backward = false;  // search FORWARD by default
+
   double pull_over_s = 0.0;
-  if (is_in_emergency_pull_over_scenario_) {
+  if (pull_over_status.pull_over_type() ==
+      PullOverStatus::EMERGENCY_PULL_OVER) {
     if (!FindEmergencyPullOverS(reference_line_info, &pull_over_s)) {
       AERROR << "Failed to find emergency_pull_over s";
       return false;
     }
-  } else if (is_in_pull_over_scenario_) {
+    search_backward = false;  // search FORWARD from target position
+  } else if (pull_over_status.pull_over_type() == PullOverStatus::PULL_OVER) {
     if (!FindDestinationPullOverS(frame, reference_line_info, path_bound,
                                   &pull_over_s)) {
       AERROR << "Failed to find pull_over s upon destination arrival";
       return false;
     }
+    search_backward = true;  // search BACKWARD from target position
   } else {
     return false;
   }
-
-  // search direction
-  const bool search_backward = is_in_pull_over_scenario_;
 
   int idx = 0;
   if (search_backward) {
@@ -752,7 +735,8 @@ bool PathBoundsDecider::SearchPullOverPosition(
       hdmap::LaneInfoConstPtr lane;
       double s = 0.0;
       double l = 0.0;
-      auto point = common::util::MakePointENU(pull_over_x, pull_over_y, 0.0);
+      auto point =
+          common::util::PointFactory::ToPointENU(pull_over_x, pull_over_y);
       if (HDMapUtil::BaseMap().GetNearestLaneWithHeading(
               point, 5.0, pull_over_theta, M_PI_2, &lane, &s, &l) == 0) {
         pull_over_theta = lane->Heading(s);
@@ -1201,6 +1185,11 @@ void PathBoundsDecider::GetBoundaryFromLaneChangeForbiddenZone(
   auto* lane_change_status = PlanningContext::Instance()
                                  ->mutable_planning_status()
                                  ->mutable_change_lane();
+  if (lane_change_status->is_clear_to_change_lane()) {
+    ADEBUG << "Current position is clear to change lane. No need prep s.";
+    lane_change_status->set_exist_lane_change_start_position(false);
+    return;
+  }
   double lane_change_start_s = 0.0;
   if (lane_change_status->exist_lane_change_start_position()) {
     common::SLPoint point_sl;

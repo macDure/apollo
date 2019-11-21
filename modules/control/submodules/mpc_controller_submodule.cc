@@ -41,25 +41,34 @@ std::string MPCControllerSubmodule::Name() const {
 }
 
 bool MPCControllerSubmodule::Init() {
+  // TODO(SHU): separate common_control conf from controller conf
   if (!cyber::common::GetProtoFromFile(FLAGS_mpc_controller_conf_file,
                                        &mpc_controller_conf_)) {
     AERROR << "Unable to load control conf file: " +
                   FLAGS_mpc_controller_conf_file;
     return false;
   }
-  // MPC controller
-  if (!mpc_controller_.Init(&mpc_controller_conf_).ok()) {
-    monitor_logger_buffer_.ERROR(
-        "MPC Control init controller failed! Stopping...");
+  // load calibration table
+  if (!cyber::common::GetProtoFromFile(FLAGS_calibration_table_file,
+                                       &calibration_table_)) {
+    AERROR << "Unable to load calibration table file: " +
+                  FLAGS_calibration_table_file;
     return false;
   }
+  mpc_controller_conf_.mutable_mpc_controller_conf()
+      ->set_allocated_calibration_table(&calibration_table_);
   return true;
 }
 
 bool MPCControllerSubmodule::Proc(
-    const std::shared_ptr<control::Preprocessor>& preprocessor_status) {
+    const std::shared_ptr<Preprocessor>& preprocessor_status) {
   ControlCommand control_command;
   local_view_ = preprocessor_status->mutable_local_view();
+
+  // skip produce control command when estop for MPC controller
+  if (preprocessor_status->estop()) {
+    return true;
+  }
 
   Status status = ProduceControlCommand(&control_command);
   AERROR_IF(!status.ok()) << "Failed to produce control command:"
@@ -73,7 +82,6 @@ Status MPCControllerSubmodule::ProduceControlCommand(
     ControlCommand* control_command) {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  // TODO(SHU): skip produce control command if estop
   if (local_view_->mutable_chassis()->driving_mode() ==
       Chassis::COMPLETE_MANUAL) {
     mpc_controller_.Reset();

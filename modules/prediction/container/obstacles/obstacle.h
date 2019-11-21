@@ -58,6 +58,8 @@ class Obstacle {
 
   static std::unique_ptr<Obstacle> Create(const Feature& feature);
 
+  Obstacle() = default;
+
   /**
    * @brief Destructor
    */
@@ -194,13 +196,13 @@ class Obstacle {
    * @brief Check if the obstacle is close to a junction exit.
    * @return If the obstacle is closed to a junction exit.
    */
-  bool IsCloseToJunctionExit();
+  bool IsCloseToJunctionExit() const;
 
   /**
    * @brief Check if the obstacle has junction feature.
    * @return If the obstacle has junction feature.
    */
-  bool HasJunctionFeatureWithExits();
+  bool HasJunctionFeatureWithExits() const;
 
   /**
    * @brief Build junction feature.
@@ -246,6 +248,8 @@ class Obstacle {
    */
   void SetCaution();
 
+  bool IsCaution() const;
+
   void SetEvaluatorType(const ObstacleConf::EvaluatorType& evaluator_type);
 
   void SetPredictorType(const ObstacleConf::PredictorType& predictor_type);
@@ -255,8 +259,6 @@ class Obstacle {
   PredictionObstacle GeneratePredictionObstacle();
 
  private:
-  Obstacle() = default;
-
   void SetStatus(const perception::PerceptionObstacle& perception_obstacle,
                  double timestamp, Feature* feature);
 

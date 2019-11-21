@@ -135,7 +135,10 @@
 		"showVideo": {
 			"default": false
 		},
-		"showTeleopConsoleMonitor": {
+		"showConsoleTeleopMonitor": {
+			"default": false
+		},
+		"showCarTeleopMonitor": {
 			"default": false
 		},
 		"cameraAngle": {
@@ -173,6 +176,10 @@
 		"showPredictionMinor": {
 			"default": true,
 			"menuId": "predictionMinor"
+		},
+		"showGaussianInfo": {
+			"default": false,
+			"menuId": "predictionGaussianInfo"
 		},
 		"showPredictionPriority": {
 			"default": true,

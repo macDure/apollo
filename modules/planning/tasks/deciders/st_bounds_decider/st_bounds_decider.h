@@ -39,6 +39,7 @@ namespace apollo {
 namespace planning {
 
 constexpr double kSTBoundsDeciderResolution = 0.1;
+constexpr double kSTPassableThreshold = 5.0;
 
 class STBoundsDecider : public Decider {
  public:
@@ -52,17 +53,22 @@ class STBoundsDecider : public Decider {
                            ReferenceLineInfo* const reference_line_info);
 
   common::Status GenerateRegularSTBound(
-      std::vector<std::tuple<double, double, double>>* const st_bound);
+      std::vector<std::tuple<double, double, double>>* const st_bound,
+      std::vector<std::tuple<double, double, double>>* const vt_bound);
 
   void RankDecisions(
       double s_guide_line, std::pair<double, double> driving_limit,
-      std::vector<std::pair<double, double>>* const available_s_bounds,
       std::vector<
-          std::vector<std::pair<std::string, ObjectDecisionType>>>* const
-          available_obs_decisions);
+          std::pair<std::tuple<double, double, double>,
+                    std::vector<std::pair<std::string, ObjectDecisionType>>>>*
+          available_choices);
+
+  void BackwardFlatten(
+      std::vector<std::tuple<double, double, double>>* const st_bound);
 
   void RecordSTGraphDebug(
       const std::vector<STBoundary>& st_graph_data,
+      const std::vector<std::tuple<double, double, double>>& st_bound,
       planning_internal::STGraphDebug* const st_graph_debug);
 
  private:

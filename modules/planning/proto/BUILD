@@ -165,6 +165,7 @@ proto_library(
         ":open_space_trajectory_provider_config_proto_lib",
         ":path_assessment_decider_config_proto_lib",
         ":path_bounds_decider_config_proto_lib",
+        ":path_decider_config_proto_lib",
         ":path_lane_borrow_decider_config_proto_lib",
         ":path_reuse_decider_config_proto_lib",
         ":piecewise_jerk_nonlinear_speed_config_proto_lib",
@@ -187,9 +188,10 @@ proto_library(
     deps = [
         ":decision_proto_lib",
         ":planning_config_proto_lib",
-        ":planning_status_proto_lib",
         ":sl_boundary_proto_lib",
+        ":st_drivable_boundary_proto_lib",
         "//modules/canbus/proto:canbus_proto_lib",
+        "//modules/common/proto:geometry_proto_lib",
         "//modules/common/proto:header_proto_lib",
         "//modules/common/proto:pnc_point_proto_lib",
         "//modules/dreamview/proto:chart_proto_lib",
@@ -237,6 +239,16 @@ proto_library(
     name = "sl_boundary_proto_lib",
     srcs = [
         "sl_boundary.proto",
+    ],
+    deps = [
+        "//modules/common/proto:pnc_point_proto_lib",
+    ],
+)
+
+proto_library(
+    name = "st_drivable_boundary_proto_lib",
+    srcs = [
+        "st_drivable_boundary.proto",
     ],
     deps = [
         "//modules/common/proto:pnc_point_proto_lib",
@@ -310,6 +322,20 @@ proto_library(
     name = "path_bounds_decider_config_proto_lib",
     srcs = [
         "path_bounds_decider_config.proto",
+    ],
+)
+
+cc_proto_library(
+    name = "path_decider_config_proto",
+    deps = [
+        ":path_decider_config_proto_lib",
+    ],
+)
+
+proto_library(
+    name = "path_decider_config_proto_lib",
+    srcs = [
+        "path_decider_config.proto",
     ],
 )
 
@@ -642,6 +668,20 @@ proto_library(
     name = "fem_pos_deviation_smoother_config_proto_lib",
     srcs = [
         "fem_pos_deviation_smoother_config.proto",
+    ],
+)
+
+cc_proto_library(
+    name = "ipopt_return_status_proto",
+    deps = [
+        ":ipopt_return_status_proto_lib",
+    ],
+)
+
+proto_library(
+    name = "ipopt_return_status_proto_lib",
+    srcs = [
+        "ipopt_return_status.proto",
     ],
 )
 

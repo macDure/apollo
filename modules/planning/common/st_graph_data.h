@@ -21,15 +21,19 @@
 
 #pragma once
 
+#include <tuple>
 #include <vector>
 
 #include "modules/common/proto/pnc_point.pb.h"
+#include "modules/planning/proto/st_drivable_boundary.pb.h"
 
 #include "modules/planning/common/speed/st_boundary.h"
 #include "modules/planning/common/speed_limit.h"
 
 namespace apollo {
 namespace planning {
+
+constexpr double kObsSpeedIgnoreThreshold = 100.0;
 
 class StGraphData {
  public:
@@ -60,6 +64,12 @@ class StGraphData {
 
   planning_internal::STGraphDebug* mutable_st_graph_debug();
 
+  bool SetSTDrivableBoundary(
+      const std::vector<std::tuple<double, double, double>>& s_boundary,
+      const std::vector<std::tuple<double, double, double>>& v_obs_info);
+
+  const STDrivableBoundary& st_drivable_boundary() const;
+
  private:
   bool init_ = false;
   std::vector<const STBoundary*> st_boundaries_;
@@ -71,6 +81,8 @@ class StGraphData {
   double path_length_by_conf_ = 0.0;
   double total_time_by_conf_ = 0.0;
   planning_internal::STGraphDebug* st_graph_debug_ = nullptr;
+
+  STDrivableBoundary st_drivable_boundary_;
 };
 
 }  // namespace planning

@@ -21,7 +21,7 @@ FAST_BUILD_MODE="no"
 FAST_TEST_MODE="no"
 VERSION=""
 ARCH=$(uname -m)
-VERSION_X86_64="dev-18.04-x86_64-20191010_1250"
+VERSION_X86_64="dev-18.04-x86_64-20191111_1530"
 VERSION_AARCH64="dev-aarch64-20170927_1111"
 VERSION_OPT=""
 
@@ -334,7 +334,12 @@ function main(){
         warning "nvidia-docker is in deprecation!"
         warning "Please install latest docker and nvidia-container-toolkit: ${NVIDIA_DOCKER_DOC}"
       elif ! [ -z "$(which nvidia-container-toolkit)" ]; then
-        DOCKER_RUN="docker run --gpus all"
+        if dpkg --compare-versions "${DOCKER_VERSION}" "ge" "19.03"; then
+          DOCKER_RUN="docker run --gpus all"
+        else
+          warning "You must upgrade to docker-ce 19.03+ to access GPU from container!"
+          USE_GPU=0
+        fi
       else
         USE_GPU=0
         warning "Cannot access GPU from container."

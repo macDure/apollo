@@ -272,7 +272,7 @@ void Obstacle::BuildJunctionFeature() {
   }
 }
 
-bool Obstacle::IsCloseToJunctionExit() {
+bool Obstacle::IsCloseToJunctionExit() const {
   if (!HasJunctionFeatureWithExits()) {
     AERROR << "No junction feature found";
     return false;
@@ -695,7 +695,7 @@ void Obstacle::SetIsNearJunction(const PerceptionObstacle& perception_obstacle,
   feature->set_is_near_junction(is_near_junction);
 }
 
-bool Obstacle::HasJunctionFeatureWithExits() {
+bool Obstacle::HasJunctionFeatureWithExits() const {
   if (history_size() == 0) {
     return false;
   }
@@ -1043,7 +1043,7 @@ void Obstacle::BuildLaneGraph() {
   for (auto& lane : feature->lane().current_lane_feature()) {
     std::shared_ptr<const LaneInfo> lane_info =
         PredictionMap::LaneById(lane.lane_id());
-    const LaneGraph& lane_graph = ObstacleClusters::GetLaneGraph(
+    LaneGraph lane_graph = ObstacleClusters::GetLaneGraph(
         lane.lane_s(), road_graph_search_distance, true, lane_info);
     if (lane_graph.lane_sequence_size() > 0) {
       ++curr_lane_count;
@@ -1074,7 +1074,7 @@ void Obstacle::BuildLaneGraph() {
   for (auto& lane : feature->lane().nearby_lane_feature()) {
     std::shared_ptr<const LaneInfo> lane_info =
         PredictionMap::LaneById(lane.lane_id());
-    const LaneGraph& lane_graph = ObstacleClusters::GetLaneGraph(
+    LaneGraph lane_graph = ObstacleClusters::GetLaneGraph(
         lane.lane_s(), road_graph_search_distance, false, lane_info);
     if (lane_graph.lane_sequence_size() > 0) {
       ++nearby_lane_count;
@@ -1241,7 +1241,7 @@ void Obstacle::BuildLaneGraphFromLeftToRight() {
     bool vehicle_is_on_lane = (lane_id == center_lane_info->lane().id().id());
     std::shared_ptr<const LaneInfo> curr_lane_info =
         PredictionMap::LaneById(lane_id);
-    const LaneGraph& local_lane_graph =
+    LaneGraph local_lane_graph =
         ObstacleClusters::GetLaneGraphWithoutMemorizing(
             feature->lane().lane_feature().lane_s(), road_graph_search_distance,
             true, curr_lane_info);
@@ -1671,6 +1671,14 @@ void Obstacle::SetCaution() {
   CHECK_GT(feature_history_.size(), 0);
   Feature* feature = mutable_latest_feature();
   feature->mutable_priority()->set_priority(ObstaclePriority::CAUTION);
+}
+
+bool Obstacle::IsCaution() const {
+  if (feature_history_.empty()) {
+    return false;
+  }
+  const Feature& feature = latest_feature();
+  return feature.priority().priority() == ObstaclePriority::CAUTION;
 }
 
 void Obstacle::SetEvaluatorType(

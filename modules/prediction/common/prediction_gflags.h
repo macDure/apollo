@@ -49,6 +49,7 @@ DECLARE_bool(img_show_semantic_map);
 // Scenario
 DECLARE_double(junction_distance_threshold);
 DECLARE_bool(enable_all_junction);
+DECLARE_int32(caution_obs_max_nums);
 DECLARE_double(caution_search_distance_ahead);
 DECLARE_double(caution_search_distance_backward);
 DECLARE_double(caution_search_distance_backward_for_merge);
@@ -94,6 +95,8 @@ DECLARE_double(still_speed);
 DECLARE_string(evaluator_vehicle_mlp_file);
 DECLARE_string(torch_vehicle_junction_mlp_file);
 DECLARE_string(torch_vehicle_junction_map_file);
+DECLARE_string(torch_vehicle_semantic_lstm_file);
+DECLARE_string(torch_vehicle_semantic_lstm_cpu_file);
 DECLARE_string(torch_vehicle_cruise_go_file);
 DECLARE_string(torch_vehicle_cruise_cutin_file);
 DECLARE_string(torch_vehicle_lane_scanning_file);

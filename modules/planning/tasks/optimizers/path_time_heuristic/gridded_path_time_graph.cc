@@ -31,6 +31,7 @@
 
 #include "cyber/common/log.h"
 #include "modules/common/math/vec2d.h"
+#include "modules/common/util/point_factory.h"
 #include "modules/planning/common/planning_gflags.h"
 
 namespace apollo {
@@ -39,8 +40,11 @@ namespace planning {
 using apollo::common::ErrorCode;
 using apollo::common::SpeedPoint;
 using apollo::common::Status;
+using apollo::common::util::PointFactory;
 
 namespace {
+
+static constexpr double kDoubleEpsilon = 1.0e-6;
 
 // Continuous-time collision check using linear interpolation as closed-loop
 // dynamics
@@ -68,13 +72,22 @@ GriddedPathTimeGraph::GriddedPathTimeGraph(
       obstacles_(obstacles),
       init_point_(init_point),
       dp_st_cost_(dp_config, st_graph_data_.total_time_by_conf(),
-                  st_graph_data_.path_length(), obstacles, init_point_) {
+                  st_graph_data_.path_length(), obstacles,
+                  st_graph_data_.st_drivable_boundary(), init_point_) {
   total_length_t_ = st_graph_data_.total_time_by_conf();
   unit_t_ = gridded_path_time_graph_config_.unit_t();
   total_length_s_ = st_graph_data_.path_length();
   dense_unit_s_ = gridded_path_time_graph_config_.dense_unit_s();
   sparse_unit_s_ = gridded_path_time_graph_config_.sparse_unit_s();
   dense_dimension_s_ = gridded_path_time_graph_config_.dense_dimension_s();
+  // Safety approach preventing unreachable acceleration/deceleration
+  max_acceleration_ =
+      std::min(std::abs(vehicle_param_.max_acceleration()),
+               std::abs(gridded_path_time_graph_config_.max_acceleration()));
+  max_deceleration_ =
+      -1.0 *
+      std::min(std::abs(vehicle_param_.max_deceleration()),
+               std::abs(gridded_path_time_graph_config_.max_deceleration()));
 }
 
 Status GriddedPathTimeGraph::Search(SpeedData* const speed_data) {
@@ -94,12 +107,7 @@ Status GriddedPathTimeGraph::Search(SpeedData* const speed_data) {
       std::vector<SpeedPoint> speed_profile;
       double t = 0.0;
       for (uint32_t i = 0; i < dimension_t_; ++i, t += unit_t_) {
-        SpeedPoint speed_point;
-        speed_point.set_s(0.0);
-        speed_point.set_t(t);
-        speed_point.set_v(0.0);
-        speed_point.set_a(0.0);
-        speed_profile.emplace_back(speed_point);
+        speed_profile.push_back(PointFactory::ToSpeedPoint(0, t));
       }
       *speed_data = SpeedData(speed_profile);
       return Status::OK();
@@ -135,6 +143,21 @@ Status GriddedPathTimeGraph::Search(SpeedData* const speed_data) {
 Status GriddedPathTimeGraph::InitCostTable() {
   // Time dimension is homogeneous while Spatial dimension has two resolutions,
   // dense and sparse with dense resolution coming first in the spatial horizon
+
+  // Sanity check for numerical stability
+  if (unit_t_ < kDoubleEpsilon) {
+    const std::string msg = "unit_t is smaller than the kDoubleEpsilon.";
+    AERROR << msg;
+    return Status(ErrorCode::PLANNING_ERROR, msg);
+  }
+
+  // Sanity check on s dimension setting
+  if (dense_dimension_s_ < 1) {
+    const std::string msg = "dense_dimension_s is at least 1.";
+    AERROR << msg;
+    return Status(ErrorCode::PLANNING_ERROR, msg);
+  }
+
   dimension_t_ = static_cast<uint32_t>(std::ceil(
                      total_length_t_ / static_cast<double>(unit_t_))) +
                  1;
@@ -170,7 +193,8 @@ Status GriddedPathTimeGraph::InitCostTable() {
     for (uint32_t j = 0; j < dense_dimension_s_; ++j, curr_s += dense_unit_s_) {
       cost_table_i[j].Init(i, j, STPoint(curr_s, curr_t));
     }
-    curr_s = static_cast<double>(dense_dimension_s_ - 1) * dense_unit_s_;
+    curr_s = static_cast<double>(dense_dimension_s_ - 1) * dense_unit_s_ +
+             sparse_unit_s_;
     for (uint32_t j = dense_dimension_s_; j < cost_table_i.size();
          ++j, curr_s += sparse_unit_s_) {
       cost_table_i[j].Init(i, j, STPoint(curr_s, curr_t));
@@ -254,22 +278,17 @@ void GriddedPathTimeGraph::GetRowRange(const StGraphPoint& point,
   // A scaling parameter for DP range search due to the lack of accurate
   // information of the current velocity (set to 1 by default since we use
   // past 1 second's average v as approximation)
-  double acc_coeff = 1.0;
+  double acc_coeff = 0.5;
   if (!point.pre_point()) {
     v0 = init_point_.v();
-    // When we have accurate velocity from TrajectoryPoint,
-    // set acc_coeff to 0.5.
-    acc_coeff = 0.5;
   } else {
-    v0 = (point.point().s() - point.pre_point()->point().s()) / unit_t_;
+    v0 = point.GetOptimalSpeed();
   }
 
   const auto max_s_size = dimension_s_ - 1;
-
-  const double max_acceleration = std::abs(vehicle_param_.max_acceleration());
   const double t_squared = unit_t_ * unit_t_;
   const double s_upper_bound = v0 * unit_t_ +
-                               acc_coeff * max_acceleration * t_squared +
+                               acc_coeff * max_acceleration_ * t_squared +
                                point.point().s();
   const auto next_highest_itr =
       std::lower_bound(spatial_distance_by_index_.begin(),
@@ -281,11 +300,8 @@ void GriddedPathTimeGraph::GetRowRange(const StGraphPoint& point,
         std::distance(spatial_distance_by_index_.begin(), next_highest_itr);
   }
 
-  // Safety approach preventing deceleration configuration error
-  const double max_deceleration =
-      -1.0 * std::abs(vehicle_param_.max_deceleration());
   const double s_lower_bound =
-      std::fmax(0.0, v0 * unit_t_ + acc_coeff * max_deceleration * t_squared) +
+      std::fmax(0.0, v0 * unit_t_ + acc_coeff * max_deceleration_ * t_squared) +
       point.point().s();
   const auto next_lowest_itr =
       std::lower_bound(spatial_distance_by_index_.begin(),
@@ -315,17 +331,25 @@ void GriddedPathTimeGraph::CalculateCostAt(
   if (c == 0) {
     DCHECK_EQ(r, 0) << "Incorrect. Row should be 0 with col = 0. row: " << r;
     cost_cr.SetTotalCost(0.0);
+    cost_cr.SetOptimalSpeed(init_point_.v());
     return;
   }
 
   const double speed_limit = speed_limit_by_index_[r];
   const double cruise_speed = st_graph_data_.cruise_speed();
+  // The mininal s to model as constant acceleration formula
+  // default: 0.25 * 7 = 1.75 m
+  const double min_s_consider_speed = dense_unit_s_ * dimension_t_;
 
   if (c == 1) {
     const double acc =
-        (cost_cr.point().s() / unit_t_ - init_point_.v()) / unit_t_;
-    if (acc < gridded_path_time_graph_config_.max_deceleration() ||
-        acc > gridded_path_time_graph_config_.max_acceleration()) {
+        2 * (cost_cr.point().s() / unit_t_ - init_point_.v()) / unit_t_;
+    if (acc < max_deceleration_ || acc > max_acceleration_) {
+      return;
+    }
+
+    if (init_point_.v() + acc * unit_t_ < -kDoubleEpsilon &&
+        cost_cr.point().s() > min_s_consider_speed) {
       return;
     }
 
@@ -338,6 +362,7 @@ void GriddedPathTimeGraph::CalculateCostAt(
         cost_init.total_cost() +
         CalculateEdgeCostForSecondCol(r, speed_limit, cruise_speed));
     cost_cr.SetPrePoint(cost_init);
+    cost_cr.SetOptimalSpeed(init_point_.v() + acc * unit_t_);
     return;
   }
 
@@ -367,18 +392,27 @@ void GriddedPathTimeGraph::CalculateCostAt(
           pre_col[r_pre].pre_point() == nullptr) {
         continue;
       }
+      // TODO(Jiaxuan): Calculate accurate acceleration by recording speed
+      // data in ST point.
       // Use curr_v = (point.s - pre_point.s) / unit_t as current v
       // Use pre_v = (pre_point.s - prepre_point.s) / unit_t as previous v
       // Current acc estimate: curr_a = (curr_v - pre_v) / unit_t
       // = (point.s + prepre_point.s - 2 * pre_point.s) / (unit_t * unit_t)
       const double curr_a =
-          (cost_cr.point().s() + pre_col[r_pre].pre_point()->point().s() -
-           2 * pre_col[r_pre].point().s()) /
-          (unit_t_ * unit_t_);
-      if (curr_a < gridded_path_time_graph_config_.max_deceleration() ||
-          curr_a > gridded_path_time_graph_config_.max_acceleration()) {
+          2 *
+          ((cost_cr.point().s() - pre_col[r_pre].point().s()) / unit_t_ -
+           pre_col[r_pre].GetOptimalSpeed()) /
+          unit_t_;
+      if (curr_a < max_deceleration_ || curr_a > max_acceleration_) {
         continue;
       }
+
+      if (pre_col[r_pre].GetOptimalSpeed() + curr_a * unit_t_ <
+              -kDoubleEpsilon &&
+          cost_cr.point().s() > min_s_consider_speed) {
+        continue;
+      }
+
       // Filter out continuous-time node connection which is in collision with
       // obstacle
       if (CheckOverlapOnDpStGraph(st_graph_data_.st_boundaries(), cost_cr,
@@ -396,6 +430,8 @@ void GriddedPathTimeGraph::CalculateCostAt(
       if (cost < cost_cr.total_cost()) {
         cost_cr.SetTotalCost(cost);
         cost_cr.SetPrePoint(pre_col[r_pre]);
+        cost_cr.SetOptimalSpeed(pre_col[r_pre].GetOptimalSpeed() +
+                                curr_a * unit_t_);
       }
     }
     return;
@@ -412,13 +448,19 @@ void GriddedPathTimeGraph::CalculateCostAt(
     // Current acc estimate: curr_a = (curr_v - pre_v) / unit_t
     // = (point.s + prepre_point.s - 2 * pre_point.s) / (unit_t * unit_t)
     const double curr_a =
-        (cost_cr.point().s() + pre_col[r_pre].pre_point()->point().s() -
-         2 * pre_col[r_pre].point().s()) /
-        (unit_t_ * unit_t_);
-    if (curr_a > vehicle_param_.max_acceleration() ||
-        curr_a < vehicle_param_.max_deceleration()) {
+        2 *
+        ((cost_cr.point().s() - pre_col[r_pre].point().s()) / unit_t_ -
+         pre_col[r_pre].GetOptimalSpeed()) /
+        unit_t_;
+    if (curr_a > max_acceleration_ || curr_a < max_deceleration_) {
       continue;
     }
+
+    if (pre_col[r_pre].GetOptimalSpeed() + curr_a * unit_t_ < -kDoubleEpsilon &&
+        cost_cr.point().s() > min_s_consider_speed) {
+      continue;
+    }
+
     if (CheckOverlapOnDpStGraph(st_graph_data_.st_boundaries(), cost_cr,
                                 pre_col[r_pre])) {
       continue;
@@ -447,6 +489,8 @@ void GriddedPathTimeGraph::CalculateCostAt(
     if (cost < cost_cr.total_cost()) {
       cost_cr.SetTotalCost(cost);
       cost_cr.SetPrePoint(pre_col[r_pre]);
+      cost_cr.SetOptimalSpeed(pre_col[r_pre].GetOptimalSpeed() +
+                              curr_a * unit_t_);
     }
   }
 }
@@ -480,10 +524,13 @@ Status GriddedPathTimeGraph::RetrieveSpeedProfile(SpeedData* const speed_data) {
   std::vector<SpeedPoint> speed_profile;
   const StGraphPoint* cur_point = best_end_point;
   while (cur_point != nullptr) {
+    ADEBUG << "Time: " << cur_point->point().t();
+    ADEBUG << "S: " << cur_point->point().s();
+    ADEBUG << "V: " << cur_point->GetOptimalSpeed();
     SpeedPoint speed_point;
     speed_point.set_s(cur_point->point().s());
     speed_point.set_t(cur_point->point().t());
-    speed_profile.emplace_back(speed_point);
+    speed_profile.push_back(speed_point);
     cur_point = cur_point->pre_point();
   }
   std::reverse(speed_profile.begin(), speed_profile.end());

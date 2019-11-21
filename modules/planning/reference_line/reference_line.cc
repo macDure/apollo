@@ -26,6 +26,8 @@
 
 #include "boost/math/tools/minima.hpp"
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "cyber/common/log.h"
 #include "modules/common/math/angle.h"
 #include "modules/common/math/cartesian_frenet_conversion.h"
@@ -759,10 +761,11 @@ std::string ReferenceLine::DebugString() const {
   const auto limit =
       std::min(reference_points_.size(),
                static_cast<size_t>(FLAGS_trajectory_point_num_for_debug));
-  return apollo::common::util::StrCat(
+  return absl::StrCat(
       "point num:", reference_points_.size(),
-      apollo::common::util::PrintDebugStringIter(
-          reference_points_.begin(), reference_points_.begin() + limit, ""));
+      absl::StrJoin(reference_points_.begin(),
+                    reference_points_.begin() + limit, "",
+                    apollo::common::util::DebugStringFormatter()));
 }
 
 double ReferenceLine::GetSpeedLimitFromS(const double s) const {

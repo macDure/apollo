@@ -29,6 +29,7 @@ DECLARE_int32(max_frame_history_num);
 // scenarios related
 DECLARE_string(scenario_bare_intersection_unprotected_config_file);
 DECLARE_string(scenario_emergency_pull_over_config_file);
+DECLARE_string(scenario_emergency_stop_config_file);
 DECLARE_string(scenario_lane_follow_config_file);
 DECLARE_string(scenario_narrow_street_u_turn_config_file);
 DECLARE_string(scenario_park_and_go_config_file);
@@ -43,12 +44,12 @@ DECLARE_string(scenario_yield_sign_config_file);
 
 DECLARE_bool(enable_scenario_bare_intersection);
 DECLARE_bool(enable_scenario_emergency_pull_over);
+DECLARE_bool(enable_scenario_emergency_stop);
 DECLARE_bool(enable_scenario_park_and_go);
 DECLARE_bool(enable_scenario_pull_over);
 DECLARE_bool(enable_scenario_stop_sign);
 DECLARE_bool(enable_scenario_traffic_light);
 DECLARE_bool(enable_scenario_yield_sign);
-DECLARE_bool(enable_pull_over_exit);
 
 DECLARE_bool(enable_scenario_side_pass_multiple_parked_obstacles);
 DECLARE_bool(enable_force_pull_over_open_space_parking_test);
@@ -122,6 +123,7 @@ DECLARE_bool(enable_nudge_slowdown);
 DECLARE_bool(enable_always_stop_for_pedestrian);
 DECLARE_double(static_obstacle_nudge_l_buffer);
 DECLARE_double(nonstatic_obstacle_nudge_l_buffer);
+DECLARE_double(lane_change_obstacle_nudge_l_buffer);
 DECLARE_double(lateral_ignore_buffer);
 DECLARE_double(min_stop_distance_obstacle);
 DECLARE_double(max_stop_distance_obstacle);
@@ -288,3 +290,9 @@ DECLARE_bool(enable_lane_change_urgency_checking);
 DECLARE_double(short_path_length_threshold);
 
 DECLARE_uint64(trajectory_stitching_preserved_length);
+
+DECLARE_bool(use_st_drivable_boundary);
+
+DECLARE_bool(enable_prioritize_change_lane);
+
+DECLARE_bool(enable_remove_change_lane);

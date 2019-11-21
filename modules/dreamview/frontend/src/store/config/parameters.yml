@@ -111,7 +111,9 @@ options:
     default: false
 
   # teleop
-  showTeleopConsoleMonitor:
+  showConsoleTeleopMonitor:
+      default: false
+  showCarTeleopMonitor:
       default: false
 
   # layer Menu options
@@ -142,6 +144,9 @@ options:
   showPredictionMinor:
     default: true
     menuId: predictionMinor
+  showGaussianInfo:
+    default: false
+    menuId: predictionGaussianInfo
   showPredictionPriority:
     default: true
     menuId: predictionPriority

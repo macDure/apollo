@@ -54,7 +54,11 @@ DEFINE_string(scenario_pull_over_config_file,
 DEFINE_string(scenario_emergency_pull_over_config_file,
               "/apollo/modules/planning/conf/"
               "scenario/emergency_pull_over_config.pb.txt",
-              "The pull_over_emergency scenario configuration file");
+              "The emergency_pull_over scenario configuration file");
+DEFINE_string(scenario_emergency_stop_config_file,
+              "/apollo/modules/planning/conf/"
+              "scenario/emergency_stop_config.pb.txt",
+              "The emergency_stop scenario configuration file");
 DEFINE_string(scenario_stop_sign_unprotected_config_file,
               "/apollo/modules/planning/conf/"
               "scenario/stop_sign_unprotected_config.pb.txt",
@@ -89,11 +93,11 @@ DEFINE_bool(enable_scenario_park_and_go, true,
 DEFINE_bool(enable_scenario_pull_over, false,
             "enable pull-over scenario in planning");
 
-DEFINE_bool(enable_scenario_emergency_pull_over, false,
-            "enable pull-over-emregency scenario in planning");
+DEFINE_bool(enable_scenario_emergency_pull_over, true,
+            "enable emregency-pull-over scenario in planning");
 
-DEFINE_bool(enable_pull_over_exit, false,
-            "allow pull-over scenario exit to lane follow in planning");
+DEFINE_bool(enable_scenario_emergency_stop, true,
+            "enable emregency-stop scenario in planning");
 
 DEFINE_bool(enable_scenario_side_pass_multiple_parked_obstacles, true,
             "enable ADC to side-pass multiple parked obstacles without"
@@ -157,7 +161,7 @@ DEFINE_bool(reckless_change_lane, false,
 DEFINE_double(change_lane_fail_freeze_time, 1.0,
               "seconds. Not allowed to change lane this amount of time "
               "if it just failed to change lane");
-DEFINE_double(change_lane_success_freeze_time, 3.0,
+DEFINE_double(change_lane_success_freeze_time, 1.5,
               "seconds. Not allowed to change lane this amount of time "
               "if it just finished change lane");
 DEFINE_double(change_lane_min_length, 30.0,
@@ -252,6 +256,8 @@ DEFINE_double(static_obstacle_nudge_l_buffer, 0.3,
               "minimum l-distance to nudge a static obstacle (meters)");
 DEFINE_double(nonstatic_obstacle_nudge_l_buffer, 0.4,
               "minimum l-distance to nudge a non-static obstacle (meters)");
+DEFINE_double(lane_change_obstacle_nudge_l_buffer, 0.3,
+              "minimum l-distance to nudge when changing lane (meters)");
 DEFINE_double(lateral_ignore_buffer, 3.0,
               "If an obstacle's lateral distance is further away than this "
               "distance, ignore it");
@@ -586,3 +592,12 @@ DEFINE_uint64(trajectory_stitching_preserved_length, 20,
 
 DEFINE_double(side_pass_driving_width_l_buffer, 0.1,
               "(unit: meter) for side pass driving width l buffer");
+
+DEFINE_bool(use_st_drivable_boundary, false,
+            "True to use st_drivable boundary in speed planning");
+
+DEFINE_bool(enable_prioritize_change_lane, false,
+            "True to enable prioritize change_lane reference line");
+
+DEFINE_bool(enable_remove_change_lane, false,
+            "True to enable remove change_lane reference line");

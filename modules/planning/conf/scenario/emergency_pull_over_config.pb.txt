@@ -1,7 +1,9 @@
 scenario_type: EMERGENCY_PULL_OVER
 emergency_pull_over_config: {
-  max_stop_deceleration: 3.0
+  max_stop_deceleration: 4.5
   slow_down_deceleration_time: 3.0
+  target_slow_down_speed: 1.0
+  stop_distance: 1.5
 }
 
 stage_type: EMERGENCY_PULL_OVER_SLOW_DOWN
@@ -84,6 +86,7 @@ stage_config: {
       pull_over_destination_to_adc_buffer: 25.0
       pull_over_destination_to_pathend_buffer: 10.0
       pull_over_road_edge_buffer: 0.15
+      pull_over_approach_lon_distance_adjust_factor: 1.6
     }
   }
   task_config: {

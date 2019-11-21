@@ -21,6 +21,7 @@
 #include <list>
 #include <utility>
 
+#include "absl/strings/str_cat.h"
 #include "cyber/common/file.h"
 #include "gtest/gtest_prod.h"
 
@@ -135,19 +136,19 @@ Status OnLanePlanning::InitFrame(const uint32_t sequence_num,
   }
   DCHECK_EQ(reference_lines.size(), segments.size());
 
-  auto forword_limit =
+  auto forward_limit =
       hdmap::PncMap::LookForwardDistance(vehicle_state.linear_velocity());
 
   for (auto& ref_line : reference_lines) {
     if (!ref_line.Segment(Vec2d(vehicle_state.x(), vehicle_state.y()),
-                          FLAGS_look_backward_distance, forword_limit)) {
+                          FLAGS_look_backward_distance, forward_limit)) {
       std::string msg = "Fail to shrink reference line.";
       return Status(ErrorCode::PLANNING_ERROR, msg);
     }
   }
   for (auto& seg : segments) {
     if (!seg.Shrink(Vec2d(vehicle_state.x(), vehicle_state.y()),
-                    FLAGS_look_backward_distance, forword_limit)) {
+                    FLAGS_look_backward_distance, forward_limit)) {
       std::string msg = "Fail to shrink routing segments.";
       return Status(ErrorCode::PLANNING_ERROR, msg);
     }
@@ -576,7 +577,7 @@ Status OnLanePlanning::Plan(
     last_publishable_trajectory_.reset(new PublishableTrajectory(
         current_time_stamp, best_ref_info->trajectory()));
 
-    ADEBUG << "current_time_stamp: " << std::to_string(current_time_stamp);
+    ADEBUG << "current_time_stamp: " << current_time_stamp;
 
     last_publishable_trajectory_->PrependTrajectoryPoints(
         std::vector<TrajectoryPoint>(stitching_trajectory.begin(),
@@ -625,11 +626,26 @@ void AddSTGraph(const STGraphDebug& st_graph, Chart* chart) {
                        false, chart);
 
   for (const auto& boundary : st_graph.boundary()) {
-    auto* boundary_chart = chart->add_polygon();
-
     // from 'ST_BOUNDARY_TYPE_' to the end
     std::string type =
         StGraphBoundaryDebug_StBoundaryType_Name(boundary.type()).substr(17);
+
+    auto* boundary_chart = chart->add_polygon();
+    auto* properties = boundary_chart->mutable_properties();
+    (*properties)["borderWidth"] = "2";
+    (*properties)["pointRadius"] = "0";
+    (*properties)["lineTension"] = "0";
+    (*properties)["cubicInterpolationMode"] = "monotone";
+    (*properties)["showLine"] = "true";
+    (*properties)["showText"] = "true";
+    (*properties)["fill"] = "false";
+
+    if (type == "DRIVABLE_REGION") {
+      (*properties)["color"] = "\"rgba(0, 255, 0, 0.5)\"";
+    } else {
+      (*properties)["color"] = "\"rgba(255, 0, 0, 0.8)\"";
+    }
+
     boundary_chart->set_label(boundary.name() + "_" + type);
     for (const auto& point : boundary.point()) {
       auto* point_debug = boundary_chart->add_point();
@@ -750,7 +766,7 @@ void OnLanePlanning::AddOpenSpaceOptimizerResult(
   int obstacle_index = 1;
   for (const auto& obstacle : open_space_debug.obstacles()) {
     auto* obstacle_outline = chart->add_line();
-    obstacle_outline->set_label("Bdr" + std::to_string(obstacle_index));
+    obstacle_outline->set_label(absl::StrCat("Bdr", obstacle_index));
     obstacle_index += 1;
     for (int vertice_index = 0;
          vertice_index < obstacle.vertices_x_coords_size(); vertice_index++) {
@@ -871,8 +887,8 @@ void OnLanePlanning::AddPartitionedTrajectory(
   for (const auto& partitioned_trajectory :
        open_space_debug.partitioned_trajectories().trajectory()) {
     auto* partition_line = chart->add_line();
-    partition_line->set_label("Patitioned " +
-                              std::to_string(partitioned_trajectory_label));
+    partition_line->set_label(
+        absl::StrCat("Patitioned ", partitioned_trajectory_label));
     ++partitioned_trajectory_label;
     for (const auto& point : partitioned_trajectory.trajectory_point()) {
       auto* point_debug = partition_line->add_point();

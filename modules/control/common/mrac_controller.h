@@ -25,8 +25,7 @@
 
 #include "Eigen/Core"
 
-#include "modules/common/filters/digital_filter.h"
-#include "modules/common/filters/digital_filter_coefficients.h"
+#include "modules/common/status/status.h"
 #include "modules/control/proto/mrac_conf.pb.h"
 
 /**
@@ -50,53 +49,71 @@ class MracController {
   void Init(const MracConf &mrac_conf, const double dt);
 
   /**
-   * time constant, natrual frequency and damping ratio
+   * time constant, natural frequency and damping ratio
    * @param mrac_conf configuration for reference model
+   * @return Status parameter initialization status
    */
-  void SetReferenceModel(const MracConf &mrac_conf);
+  common::Status SetReferenceModel(const MracConf &mrac_conf);
 
   /**
    * state adaptive gain, desired adaptive gain and nonlinear-component adaptive
    * gain
    * @param mrac_conf configuration for adaption model
+   * @return Status parameter initialization status
    */
-  void SetAdaptionModel(const MracConf &mrac_conf);
+  common::Status SetAdaptionModel(const MracConf &mrac_conf);
 
   /**
    * @brief build mrac (1st or 2nd) order reference model in the discrete-time
    form, with the bilinear transform (trapezoidal integration) method
-   * @param dt sampling time interval
+   * @return Status reference model initialization status
    */
-  void BuildReferenceModel(const double dt);
+  common::Status BuildReferenceModel();
 
   /**
    * @brief build mrac (1st or 2nd) order adaptive dynamic model in the
    * discrete-time form
-   * @param none
+   * @return Status adaption model initialization status
    */
-  void BuildAdaptionModel();
+  common::Status BuildAdaptionModel();
 
   /**
-   * @brief exexute the adaption interation with respect to the designed law in
+   * @brief check if the solution of the algebraic Lyapunov Equation is
+   * symmetric positive definite
+   * @param matrix_a reference model matrix
+   * @param matrix_p Lyapunov function matrix
+   * @return indicator of the symmetric positive definite matrix
+   */
+  bool CheckLyapunovPD(const Eigen::MatrixXd matrix_a,
+                       const Eigen::MatrixXd matrix_p) const;
+
+  /**
+   * @brief execute the reference state interation with respect to the designed
+   inputs in discrete-time form, with the bilinear transform (trapezoidal
+   integration) method
+   */
+  void UpdateReference();
+
+  /**
+   * @brief execute the adaption interation with respect to the designed law in
    discrete-time form, with the bilinear transform (trapezoidal integration)
    method
    * @param law_adp adaptive law at k and k-1 steps
    * @param state_adp state used in the adaptive law at k and k-1 steps
    * @param gain_adp adaptive gain for the given adaptive law
    */
-  void Adaption(Eigen::MatrixXd *law_adp, const Eigen::MatrixXd state_adp,
-                const Eigen::MatrixXd gain_adp);
+  void UpdateAdaption(Eigen::MatrixXd *law_adp, const Eigen::MatrixXd state_adp,
+                      const Eigen::MatrixXd gain_adp);
 
   /**
    * @brief calculate the anti-windup compensation with respect to the integral
    * windup issue
    * @param control_command desired control command for the actuator
-   * @param upper_bound the physical or designed upper bound of the actuator
-   * @param upper_bound the physical or designed lower bound of the actuator
+   * @param previous_command last control command for the actuator
+   * @param dt control sampling time
    */
   void AntiWindupCompensation(const double control_command,
-                              const double upper_bound,
-                              const double lower_bound);
+                              const double previous_command);
 
   /**
    * @brief reset all the variables (including all the states, gains and
@@ -119,10 +136,43 @@ class MracController {
    * @param command original command as the input of the actuation system
    * @param state actual output state of the actuation system
    * @param dt sampling time interval
+   * @param input_limit physical or designed bound of the input
+   * @param input_rate_limit physical or designed bound of the input
+   * changing-rate
    * @return control value based on mrac controller architecture
    */
   virtual double Control(const double command, const Eigen::MatrixXd state,
-                         const double dt);
+                         const double input_limit,
+                         const double input_rate_limit);
+
+  /**
+   * @brief bound the system output with the given bound and change-rate bound
+   * @param output_unbounded original system output without bound
+   * @param previous_output system output in the last step
+   * @param dt sampling time interval
+   * @param output_bounded bounded system output
+   * @return saturation_status system saturation status indicator
+   */
+  int BoundOutput(const double output_unbounded, const double previous_output,
+                  double *output_bounded);
+
+  /**
+   * @brief set initial values for state components in reference model dynamics
+   * @param state_reference_init initial reference states
+   */
+  void SetInitialReferenceState(const Eigen::MatrixXd state_reference_init);
+
+  /**
+   * @brief set initial values for state components in actual actuator dynamics
+   * @param state_reference_init initial action states
+   */
+  void SetInitialActionState(const Eigen::MatrixXd state_action_init);
+
+  /**
+   * @brief set initial command (desired input)
+   * @param command_init initial desired input
+   */
+  void SetInitialCommand(const double command_init);
 
   /**
    * @brief set convergence ratio for state components in adaptive dynamics
@@ -137,10 +187,10 @@ class MracController {
   void SetInputAdaptionRate(const double ratio_input);
 
   /**
-   * @brief set convergence ratio for nonliear components in adaptive dynamics
+   * @brief set convergence ratio for nonlinear components in adaptive dynamics
    * @param ratio_nonlinear convergence ratio for additional nonlinear adaption
    */
-  void SetNonlinearAdaptionRate(const double ratio_nonliear);
+  void SetNonlinearAdaptionRate(const double ratio_nonlinear);
 
   /**
    * @brief get convergence ratio for state components in adaptive dynamics
@@ -191,21 +241,19 @@ class MracController {
   double CurrentInputAdaptionGain() const;
 
  protected:
-  // reference model as a digital filter
-  common::DigitalFilter reference_model_;
   // indicator if the reference/adaption model is valid
   bool reference_model_enabled_ = false;
   bool adaption_model_enabled_ = false;
   // The order of the reference/adaption model
   int model_order_ = 1;
 
-  // 1st-order Reference system coefficients in contiouous-time domain
+  // 1st-order Reference system coefficients in continuous-time domain
   double tau_reference_ = 0.0;
-  // 2nd-order Reference system coefficients in contiouous-time domain
+  // 2nd-order Reference system coefficients in continuous-time domain
   double wn_reference_ = 0.0;
   double zeta_reference_ = 0.0;
 
-  double Ts_ = 0.01;  // By default, control sampling time is 0.01 sec
+  double ts_ = 0.01;  // By default, control sampling time is 0.01 sec
 
   // Adaption system coefficients
   // State adaption gain
@@ -241,15 +289,14 @@ class MracController {
   double control_previous_ = 0.0;
 
   // State saturation limits in discrete-time domain
-  double bound_reference_high_ = 0.0;
-  double bound_reference_low_ = 0.0;
-  double bound_control_high_ = 0.0;
-  double bound_control_low_ = 0.0;
+  double bound_ratio_ = 0.0;
+  double bound_command_ = 0.0;
+  double bound_command_rate_ = 0.0;
   int saturation_status_reference_ = 0;
   int saturation_status_control_ = 0;
 
   // Anti-Windup compensation
-  double gain_anti_windup_ = 0.0;
+  Eigen::MatrixXd gain_anti_windup_;
   Eigen::MatrixXd compensation_anti_windup_;
 };
 

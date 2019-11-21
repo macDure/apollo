@@ -27,7 +27,7 @@
 #include "cyber/common/log.h"
 #include "modules/common/math/math_utils.h"
 #include "modules/common/time/time.h"
-#include "modules/common/util/string_tokenizer.h"
+#include "modules/common/util/point_factory.h"
 #include "modules/common/util/string_util.h"
 #include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/map/hdmap/hdmap.h"
@@ -51,6 +51,7 @@ using apollo::common::SLPoint;
 using apollo::common::Status;
 using apollo::common::TrajectoryPoint;
 using apollo::common::time::Clock;
+using apollo::common::util::PointFactory;
 
 namespace {
 constexpr double kPathOptimizationFallbackCost = 2e4;
@@ -115,7 +116,16 @@ Stage::StageStatus LaneFollowStage::Process(
   ADEBUG << "Number of reference lines:\t"
          << frame->mutable_reference_line_info()->size();
 
+  unsigned int count = 0;
+
   for (auto& reference_line_info : *frame->mutable_reference_line_info()) {
+    // TODO(SHU): need refactor
+    if (count++ == frame->mutable_reference_line_info()->size()) {
+      break;
+    }
+    ADEBUG << "No: [" << count << "] Reference Line.";
+    ADEBUG << "IsChangeLanePath: " << reference_line_info.IsChangeLanePath();
+
     if (has_drivable_reference_line) {
       reference_line_info.SetDrivable(false);
       break;
@@ -127,6 +137,8 @@ Stage::StageStatus LaneFollowStage::Process(
     if (cur_status.ok()) {
       if (reference_line_info.IsChangeLanePath()) {
         ADEBUG << "reference line is lane change ref.";
+        ADEBUG << "FLAGS_enable_smarter_lane_change: "
+               << FLAGS_enable_smarter_lane_change;
         if (reference_line_info.Cost() < kStraightForwardLineCost &&
             (LaneChangeDecider::IsClearToChangeLane(&reference_line_info) ||
              FLAGS_enable_smarter_lane_change)) {
@@ -163,6 +175,8 @@ Status LaneFollowStage::PlanOnReferenceLine(
     reference_line_info->AddCost(kStraightForwardLineCost);
   }
   ADEBUG << "planning start point:" << planning_start_point.DebugString();
+  ADEBUG << "Current reference_line_info is IsChangeLanePath: "
+         << reference_line_info->IsChangeLanePath();
 
   auto ret = Status::OK();
   for (auto* optimizer : task_list_) {
@@ -181,6 +195,13 @@ Status LaneFollowStage::PlanOnReferenceLine(
     ADEBUG << optimizer->Name() << " time spend: " << time_diff_ms << " ms.";
 
     RecordDebugInfo(reference_line_info, optimizer->Name(), time_diff_ms);
+
+    // TODO(SHU): disable reference line order changes for now
+    // updated reference_line_info, because it is changed in
+    // lane_change_decider by PrioritizeChangeLane().
+    // reference_line_info = &frame->mutable_reference_line_info()->front();
+    // ADEBUG << "Current reference_line_info is IsChangeLanePath: "
+    //        << reference_line_info->IsChangeLanePath();
   }
 
   RecordObstacleDebugInfo(reference_line_info);
@@ -233,8 +254,8 @@ Status LaneFollowStage::PlanOnReferenceLine(
         }
       }
       if (add_stop_obstacle_cost) {
-        constexpr double kRefrenceLineStaticObsCost = 1e3;
-        reference_line_info->AddCost(kRefrenceLineStaticObsCost);
+        static constexpr double kReferenceLineStaticObsCost = 1e3;
+        reference_line_info->AddCost(kReferenceLineStaticObsCost);
       }
     }
   }
@@ -332,11 +353,9 @@ void LaneFollowStage::GenerateFallbackPathProfile(
 
     const double max_s = 100.0;
     for (double s = 0; s < max_s; s += unit_s) {
-      common::PathPoint path_point = common::util::MakePathPoint(
-          adc_traversed_x, adc_traversed_y, 0.0, adc_point_heading,
-          adc_point_kappa, adc_point_dkappa, 0.0);
-      path_point.set_s(s);
-      path_points.push_back(std::move(path_point));
+      path_points.push_back(PointFactory::ToPathPoint(
+          adc_traversed_x, adc_traversed_y, 0.0, s, adc_point_heading,
+          adc_point_kappa, adc_point_dkappa));
       adc_traversed_x += unit_s * std::cos(adc_point_heading);
       adc_traversed_y += unit_s * std::sin(adc_point_heading);
     }
@@ -355,11 +374,9 @@ void LaneFollowStage::GenerateFallbackPathProfile(
   const double max_s = reference_line.Length();
   for (double s = adc_s; s < max_s; s += unit_s) {
     const auto& ref_point = reference_line.GetReferencePoint(s);
-    common::PathPoint path_point = common::util::MakePathPoint(
-        ref_point.x() + dx, ref_point.y() + dy, 0.0, ref_point.heading(),
-        ref_point.kappa(), ref_point.dkappa(), 0.0);
-    path_point.set_s(s - adc_s);
-    path_points.push_back(std::move(path_point));
+    path_points.push_back(PointFactory::ToPathPoint(
+        ref_point.x() + dx, ref_point.y() + dy, 0.0, s - adc_s,
+        ref_point.heading(), ref_point.kappa(), ref_point.dkappa()));
   }
   path_data->SetDiscretizedPath(DiscretizedPath(std::move(path_points)));
 }

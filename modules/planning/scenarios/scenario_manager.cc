@@ -21,16 +21,17 @@
 #include <utility>
 #include <vector>
 
-#include "modules/map/proto/map_lane.pb.h"
-
 #include "modules/common/configs/vehicle_config_helper.h"
+#include "modules/common/util/point_factory.h"
 #include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/map/pnc_map/path.h"
+#include "modules/map/proto/map_lane.pb.h"
 #include "modules/planning/common/planning_context.h"
 #include "modules/planning/common/planning_gflags.h"
 #include "modules/planning/common/util/util.h"
 #include "modules/planning/scenarios/bare_intersection/unprotected/bare_intersection_unprotected_scenario.h"
 #include "modules/planning/scenarios/emergency/emergency_pull_over/emergency_pull_over_scenario.h"
+#include "modules/planning/scenarios/emergency/emergency_stop/emergency_stop_scenario.h"
 #include "modules/planning/scenarios/lane_follow/lane_follow_scenario.h"
 #include "modules/planning/scenarios/park/pull_over/pull_over_scenario.h"
 #include "modules/planning/scenarios/park/valet_parking/valet_parking_scenario.h"
@@ -69,6 +70,10 @@ std::unique_ptr<Scenario> ScenarioManager::CreateScenario(
       break;
     case ScenarioConfig::EMERGENCY_PULL_OVER:
       ptr.reset(new emergency_pull_over::EmergencyPullOverScenario(
+          config_map_[scenario_type], &scenario_context_));
+      break;
+    case ScenarioConfig::EMERGENCY_STOP:
+      ptr.reset(new emergency_stop::EmergencyStopScenario(
           config_map_[scenario_type], &scenario_context_));
       break;
     case ScenarioConfig::LANE_FOLLOW:
@@ -133,6 +138,10 @@ void ScenarioManager::RegisterScenarios() {
   CHECK(
       Scenario::LoadConfig(FLAGS_scenario_emergency_pull_over_config_file,
                            &config_map_[ScenarioConfig::EMERGENCY_PULL_OVER]));
+
+  // emergency_stop
+  CHECK(Scenario::LoadConfig(FLAGS_scenario_emergency_stop_config_file,
+                             &config_map_[ScenarioConfig::EMERGENCY_STOP]));
 
   // park_and_go
   CHECK(Scenario::LoadConfig(FLAGS_scenario_park_and_go_config_file,
@@ -209,7 +218,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectPullOverScenario(
     const auto& pull_over_status =
         PlanningContext::Instance()->planning_status().pull_over();
     if (adc_distance_to_dest < scenario_config.max_distance_stop_search() &&
-        !pull_over_status.is_feasible()) {
+        !pull_over_status.has_position()) {
       pull_over_scenario = false;
     }
   }
@@ -320,14 +329,15 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectPadMsgScenario(
       }
       break;
     case DrivingAction::STOP:
-      // TODO(all): to be added
-      //  if (FLAGS_) {
-      //    return ScenarioConfig::STOP_EMERGENCY;
-      //  }
+      if (FLAGS_enable_scenario_emergency_stop) {
+        return ScenarioConfig::EMERGENCY_STOP;
+      }
       break;
     case DrivingAction::RESUME_CRUISE:
       if (current_scenario_->scenario_type() ==
-          ScenarioConfig::EMERGENCY_PULL_OVER) {
+              ScenarioConfig::EMERGENCY_PULL_OVER ||
+          current_scenario_->scenario_type() ==
+              ScenarioConfig::EMERGENCY_STOP) {
         return ScenarioConfig::PARK_AND_GO;
       }
       break;
@@ -723,13 +733,11 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectParkAndGoScenario(
   bool park_and_go = false;
   const auto& scenario_config =
       config_map_[ScenarioConfig::PARK_AND_GO].park_and_go_config();
-  common::VehicleState vehicle_state =
-      common::VehicleStateProvider::Instance()->vehicle_state();
-  auto adc_point = common::util::MakePointENU(
-      vehicle_state.x(), vehicle_state.y(), vehicle_state.z());
+  const auto vehicle_state_provider = common::VehicleStateProvider::Instance();
+  common::VehicleState vehicle_state = vehicle_state_provider->vehicle_state();
+  auto adc_point = common::util::PointFactory::ToPointENU(vehicle_state);
   // TODO(SHU) might consider gear == GEAR_PARKING
-  double adc_speed =
-      common::VehicleStateProvider::Instance()->linear_velocity();
+  double adc_speed = vehicle_state_provider->linear_velocity();
   double s = 0.0;
   double l = 0.0;
   const double max_abs_speed_when_stopped =
@@ -909,10 +917,10 @@ void ScenarioManager::UpdatePlanningContext(
   // BareIntersection scenario
   UpdatePlanningContextBareIntersectionScenario(frame, scenario_type);
 
-  // EmergencyPullOver scenario
-  UpdatePlanningContextEmergencyPullOverScenario(frame, scenario_type);
+  // EmergencyStop scenario
+  UpdatePlanningContextEmergencyStopcenario(frame, scenario_type);
 
-  // PullOver scenario
+  // PullOver & EmergencyPullOver scenarios
   UpdatePlanningContextPullOverScenario(frame, scenario_type);
 
   // StopSign scenario
@@ -950,6 +958,17 @@ void ScenarioManager::UpdatePlanningContextBareIntersectionScenario(
     ADEBUG << "Update PlanningContext with first_encountered pnc_junction["
            << map_itr->second.object_id << "] start_s["
            << map_itr->second.start_s << "]";
+  }
+}
+
+// update: emergency_stop status in PlanningContext
+void ScenarioManager::UpdatePlanningContextEmergencyStopcenario(
+    const Frame& frame, const ScenarioConfig::ScenarioType& scenario_type) {
+  auto* emergency_stop = PlanningContext::Instance()
+                             ->mutable_planning_status()
+                             ->mutable_emergency_stop();
+  if (!scenario_type == ScenarioConfig::EMERGENCY_STOP) {
+    emergency_stop->Clear();
   }
 }
 
@@ -1118,18 +1137,22 @@ void ScenarioManager::UpdatePlanningContextYieldSignScenario(
 // update: pull_over status in PlanningContext
 void ScenarioManager::UpdatePlanningContextPullOverScenario(
     const Frame& frame, const ScenarioConfig::ScenarioType& scenario_type) {
+  auto* pull_over = PlanningContext::Instance()
+                        ->mutable_planning_status()
+                        ->mutable_pull_over();
   if (scenario_type == ScenarioConfig::PULL_OVER) {
-    PlanningContext::Instance()
-        ->mutable_planning_status()
-        ->mutable_pull_over()
-        ->set_is_in_pull_over_scenario(true);
+    pull_over->set_pull_over_type(PullOverStatus::PULL_OVER);
+    pull_over->set_plan_pull_over_path(true);
+    return;
+  } else if (scenario_type == ScenarioConfig::EMERGENCY_PULL_OVER) {
+    pull_over->set_pull_over_type(PullOverStatus::EMERGENCY_PULL_OVER);
     return;
   }
-  PlanningContext::Instance()
-      ->mutable_planning_status()
-      ->mutable_pull_over()
-      ->set_is_in_pull_over_scenario(false);
 
+  pull_over->set_plan_pull_over_path(false);
+
+  // check pull_over_status left behind
+  // keep it if close to destination, to keep stop fence
   const auto& pull_over_status =
       PlanningContext::Instance()->planning_status().pull_over();
   if (pull_over_status.has_position() && pull_over_status.position().has_x() &&
@@ -1159,21 +1182,6 @@ void ScenarioManager::UpdatePlanningContextPullOverScenario(
       }
     }
   }
-}
-
-// update: emergency_pull_over status in PlanningContext
-void ScenarioManager::UpdatePlanningContextEmergencyPullOverScenario(
-    const Frame& frame, const ScenarioConfig::ScenarioType& scenario_type) {
-  auto* emergency_pull_over = PlanningContext::Instance()
-                                  ->mutable_planning_status()
-                                  ->mutable_emergency_pull_over();
-
-  if (scenario_type != ScenarioConfig::EMERGENCY_PULL_OVER) {
-    emergency_pull_over->Clear();
-    return;
-  }
-
-  emergency_pull_over->set_is_in_emergency_pull_over_scenario(true);
 }
 
 }  // namespace scenario
