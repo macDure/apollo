@@ -13290,37 +13290,30 @@ new_controller_conf {
   speed_controller_input_limit: 2.0
   station_error_limit: 2.0
   preview_window: 20.0
-  standstill_acceleration: -0.3
+  standstill_acceleration: -4.0
   
   station_pid_conf {
     integrator_enable: false
     integrator_saturation_level: 0.3
     kp: 0.2
-    ki: 0.2
-    kd: 0.1
+    ki: 0.0
+    kd: 0.0
   }
   low_speed_pid_conf {
     integrator_enable: true
     integrator_saturation_level: 0.3
-    kp: 2.0
+    kp: 200.0
     ki: 0.3
-    kd: 0.1
+    kd: 0.0
   }
   high_speed_pid_conf {
     integrator_enable: true
     integrator_saturation_level: 0.3
-    kp: 1.0
+    kp: 10.0
     ki: 0.3
-    kd: 0.1
-  }
-  switch_speed: 2.5
-  reverse_station_pid_conf {
-    integrator_enable: true
-    integrator_saturation_level: 0.5
-    kp: 0.4
-    ki: 0.1
     kd: 0.0
   }
+  switch_speed: 2.5
   calibration_table {
     calibration {
       speed: 0.0

@@ -191,14 +191,22 @@ Status NewController::ComputeControlCommand(
 
   /*（6）计算速度输入，纵向车速=速度补偿+车速偏差。*/
   double speed_controller_input = 0.0;
-  speed_controller_input = speed_offset + debug->speed_error();
+  /****************************************************************************/
+  /*****请老师在此处补全计算speed_controller_input代码*****/
+  //speed_controller_input = speed_offset + debug->speed_error();
+  /****************************************************************************/
+
 
   /*（8）根据车速度补偿值，采用PID求取加速度补偿；*/
   double acceleration_cmd_closeloop = 0.0;
   acceleration_cmd_closeloop =speed_pid_controller_.Control(speed_controller_input, ts);
 
   /*（10）加速度=速度补偿+预览加速度+坡度补偿；*/
-  double acceleration_cmd =acceleration_cmd_closeloop + debug->preview_acceleration_reference() ;
+  /****************************************************************************/
+  /*****请老师在此处补全计算acceleration_cmd代码*****/ 
+  //double acceleration_cmd =acceleration_cmd_closeloop + debug->preview_acceleration_reference() ;
+  /****************************************************************************/
+
 
   // 关闭停车标志
   debug->set_is_full_stop(false);
@@ -276,11 +284,17 @@ Status NewController::ComputeControlCommand(
             debug->is_full_stop());
   }
 
-  /*如果车加速，则不用管油门和刹车；*/
+  /*如果车加速度，则不用管油门和刹车；*/
   // if the car is driven by acceleration, disgard the cmd->throttle and brake
-  cmd->set_throttle(throttle_cmd);
-  cmd->set_brake(brake_cmd);
-  cmd->set_acceleration(acceleration_cmd);
+
+  /****************************************************************************/
+  /*****请老师在此处补全计算cmd控制命令代码*****/
+  //cmd->set_throttle(throttle_cmd);
+  //cmd->set_brake(brake_cmd);
+  //对于有些车辆只支持加速度接口控制，也可将最终加速度补偿值直接下发至canbus，作为控制命令
+  //cmd->set_acceleration(acceleration_cmd);
+  /****************************************************************************/
+
 
   /*如果目前车速为停止车速，或者规划档位和底盘档位均为空挡，则设置档位为空挡，否则
 档位为底盘档位；
@@ -357,8 +371,12 @@ TrajectoryPoint=path data+speed data
       trajectory_analyzer->QueryNearestPointByAbsoluteTime(
           preview_control_time);
   debug->set_current_station(s_matched);
-  debug->set_station_error(reference_point.path_point().s() - s_matched);
-  debug->set_speed_error(reference_point.v() - s_dot_matched);
+  /****************************************************************************/
+  /*****请老师在此处补全station_error和speed_error代码*****/
+  //debug->set_station_error(reference_point.path_point().s() - s_matched);
+  //debug->set_speed_error(reference_point.v() - s_dot_matched);
+  /****************************************************************************/
+
   debug->set_preview_acceleration_reference(preview_point.a());
 }
 
