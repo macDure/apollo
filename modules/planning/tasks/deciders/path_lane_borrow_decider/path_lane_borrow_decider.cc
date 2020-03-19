@@ -41,10 +41,7 @@ Status PathLaneBorrowDecider::Process(
   CHECK_NOTNULL(reference_line_info);
 
   // skip path_lane_borrow_decider if reused path
-  if (FLAGS_enable_skip_path_tasks && PlanningContext::Instance()
-                                          ->mutable_planning_status()
-                                          ->mutable_path_reuse_decider()
-                                          ->reused_path()) {
+  if (FLAGS_enable_skip_path_tasks && reference_line_info->path_reusable()) {
     // for debug
     AINFO << "skip due to reusing path";
     return Status::OK();
@@ -112,6 +109,7 @@ bool PathLaneBorrowDecider::IsNecessaryToBorrowLane(
       CheckLaneBorrow(reference_line_info, &left_borrowable, &right_borrowable);
       if (!left_borrowable && !right_borrowable) {
         mutable_path_decider_status->set_is_in_path_lane_borrow_scenario(false);
+        return false;
       } else {
         mutable_path_decider_status->set_is_in_path_lane_borrow_scenario(true);
         if (left_borrowable) {
@@ -271,7 +269,7 @@ void PathLaneBorrowDecider::CheckLaneBorrow(
   *left_neighbor_lane_borrowable = true;
   *right_neighbor_lane_borrowable = true;
 
-  constexpr double kLookforwardDistance = 100.0;
+  static constexpr double kLookforwardDistance = 100.0;
   double check_s = reference_line_info.AdcSlBoundary().end_s();
   const double lookforward_distance =
       std::min(check_s + kLookforwardDistance, reference_line.Length());
@@ -284,7 +282,8 @@ void PathLaneBorrowDecider::CheckLaneBorrow(
     }
 
     const auto waypoint = ref_point.lane_waypoints().front();
-    hdmap::LaneBoundaryType::Type lane_boundary_type;
+    hdmap::LaneBoundaryType::Type lane_boundary_type =
+        hdmap::LaneBoundaryType::UNKNOWN;
 
     if (*left_neighbor_lane_borrowable) {
       lane_boundary_type = hdmap::LeftBoundaryType(waypoint);

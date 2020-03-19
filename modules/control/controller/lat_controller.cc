@@ -247,16 +247,17 @@ Status LatController::Init(const ControlConf *control_conf) {
   LoadLatGainScheduler(lat_controller_conf);
   LogInitParameters();
 
-  bool enable_leadlag = control_conf_->lat_controller_conf()
-                            .enable_reverse_leadlag_compensation();
-  if (enable_leadlag) {
+  enable_leadlag_ = control_conf_->lat_controller_conf()
+                        .enable_reverse_leadlag_compensation();
+  if (enable_leadlag_) {
     leadlag_controller_.Init(lat_controller_conf.reverse_leadlag_conf(), ts_);
   }
 
-  bool enable_mrac =
+  enable_mrac_ =
       control_conf_->lat_controller_conf().enable_steer_mrac_control();
-  if (enable_mrac) {
-    mrac_controller_.Init(lat_controller_conf.steer_mrac_conf(), ts_);
+  if (enable_mrac_) {
+    mrac_controller_.Init(lat_controller_conf.steer_mrac_conf(),
+                          vehicle_param_.steering_latency_param(), ts_);
   }
 
   return Status::OK();
@@ -284,11 +285,11 @@ void LatController::LoadLatGainScheduler(
   }
 
   lat_err_interpolation_.reset(new Interpolation1D);
-  CHECK(lat_err_interpolation_->Init(xy1))
+  ACHECK(lat_err_interpolation_->Init(xy1))
       << "Fail to load lateral error gain scheduler";
 
   heading_err_interpolation_.reset(new Interpolation1D);
-  CHECK(heading_err_interpolation_->Init(xy2))
+  ACHECK(heading_err_interpolation_->Init(xy2))
       << "Fail to load heading error gain scheduler";
 }
 
@@ -487,10 +488,8 @@ Status LatController::ComputeControlCommand(
 
   double steer_angle = 0.0;
   double steer_angle_feedback_augment = 0.0;
-  bool enable_leadlag = control_conf_->lat_controller_conf()
-                            .enable_reverse_leadlag_compensation();
   // Augment the feedback control on lateral error at the desired speed domain
-  if (enable_leadlag) {
+  if (enable_leadlag_) {
     if (FLAGS_enable_feedback_augment_on_high_speed ||
         std::fabs(vehicle_state->linear_velocity()) <= low_speed_bound_) {
       steer_angle_feedback_augment =
@@ -521,9 +520,7 @@ Status LatController::ComputeControlCommand(
 
   // Re-compute the steering command if the MRAC control is enabled, with steer
   // angle limitation and steer rate limitation
-  bool enable_mrac =
-      control_conf_->lat_controller_conf().enable_steer_mrac_control();
-  if (enable_mrac) {
+  if (enable_mrac_) {
     const int mrac_model_order = control_conf_->lat_controller_conf()
                                      .steer_mrac_conf()
                                      .mrac_model_order();
@@ -532,10 +529,36 @@ Status LatController::ComputeControlCommand(
     if (mrac_model_order > 1) {
       steer_state(1, 0) = (steering_position - pre_steering_position_) / ts_;
     }
+    if (std::fabs(vehicle_state->linear_velocity()) >
+        control_conf_->minimum_speed_resolution()) {
+      mrac_controller_.SetStateAdaptionRate(1.0);
+      mrac_controller_.SetInputAdaptionRate(1.0);
+    } else {
+      mrac_controller_.SetStateAdaptionRate(0.0);
+      mrac_controller_.SetInputAdaptionRate(0.0);
+    }
     steer_angle = mrac_controller_.Control(
         steer_angle, steer_state, steer_limit, steer_diff_with_max_rate / ts_);
+    // Set the steer mrac debug message
+    MracDebug *mracdebug = debug->mutable_steer_mrac_debug();
+    Matrix steer_reference = mrac_controller_.CurrentReferenceState();
+    mracdebug->set_mrac_model_order(mrac_model_order);
+    for (int i = 0; i < mrac_model_order; ++i) {
+      mracdebug->add_mrac_reference_state(steer_reference(i, 0));
+      mracdebug->add_mrac_state_error(steer_state(i, 0) -
+                                      steer_reference(i, 0));
+      mracdebug->mutable_mrac_adaptive_gain()->add_state_adaptive_gain(
+          mrac_controller_.CurrentStateAdaptionGain()(i, 0));
+    }
+    mracdebug->mutable_mrac_adaptive_gain()->add_input_adaptive_gain(
+        mrac_controller_.CurrentInputAdaptionGain()(0, 0));
+    mracdebug->set_mrac_reference_saturation_status(
+        mrac_controller_.ReferenceSaturationStatus());
+    mracdebug->set_mrac_control_saturation_status(
+        mrac_controller_.ControlSaturationStatus());
   }
   pre_steering_position_ = steering_position;
+  debug->set_steer_mrac_enable_status(enable_mrac_);
 
   // Clamp the steer angle with steer limitations at current speed
   double steer_angle_limited =
@@ -601,6 +624,9 @@ Status LatController::ComputeControlCommand(
 
 Status LatController::Reset() {
   matrix_state_.setZero();
+  if (enable_mrac_) {
+    mrac_controller_.Reset();
+  }
   return Status::OK();
 }
 

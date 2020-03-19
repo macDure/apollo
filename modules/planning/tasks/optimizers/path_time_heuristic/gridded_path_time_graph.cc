@@ -23,7 +23,6 @@
 #include <algorithm>
 #include <limits>
 #include <string>
-#include <utility>
 
 #include "cyber/task/task.h"
 
@@ -50,6 +49,9 @@ static constexpr double kDoubleEpsilon = 1.0e-6;
 // dynamics
 bool CheckOverlapOnDpStGraph(const std::vector<const STBoundary*>& boundaries,
                              const StGraphPoint& p1, const StGraphPoint& p2) {
+  if (FLAGS_use_st_drivable_boundary) {
+    return false;
+  }
   for (const auto* boundary : boundaries) {
     if (boundary->boundary_type() == STBoundary::BoundaryType::KEEP_CLEAR) {
       continue;
@@ -91,7 +93,7 @@ GriddedPathTimeGraph::GriddedPathTimeGraph(
 }
 
 Status GriddedPathTimeGraph::Search(SpeedData* const speed_data) {
-  constexpr double kBounadryEpsilon = 1e-2;
+  static constexpr double kBounadryEpsilon = 1e-2;
   for (const auto& boundary : st_graph_data_.st_boundaries()) {
     // KeepClear obstacles not considered in Dp St decision
     if (boundary->boundary_type() == STBoundary::BoundaryType::KEEP_CLEAR) {
@@ -366,7 +368,7 @@ void GriddedPathTimeGraph::CalculateCostAt(
     return;
   }
 
-  constexpr double kSpeedRangeBuffer = 0.20;
+  static constexpr double kSpeedRangeBuffer = 0.20;
   const double pre_lowest_s =
       cost_cr.point().s() -
       FLAGS_planning_upper_speed_limit * (1 + kSpeedRangeBuffer) * unit_t_;
@@ -381,13 +383,12 @@ void GriddedPathTimeGraph::CalculateCostAt(
         std::distance(spatial_distance_by_index_.begin(), pre_lowest_itr));
   }
   const uint32_t r_pre_size = r - r_low + 1;
-  uint32_t r_pre = r;
   const auto& pre_col = cost_table_[c - 1];
   double curr_speed_limit = speed_limit;
 
   if (c == 2) {
     for (uint32_t i = 0; i < r_pre_size; ++i) {
-      r_pre = r - i;
+      uint32_t r_pre = r - i;
       if (std::isinf(pre_col[r_pre].total_cost()) ||
           pre_col[r_pre].pre_point() == nullptr) {
         continue;
@@ -438,7 +439,7 @@ void GriddedPathTimeGraph::CalculateCostAt(
   }
 
   for (uint32_t i = 0; i < r_pre_size; ++i) {
-    r_pre = r - i;
+    uint32_t r_pre = r - i;
     if (std::isinf(pre_col[r_pre].total_cost()) ||
         pre_col[r_pre].pre_point() == nullptr) {
       continue;
@@ -535,7 +536,7 @@ Status GriddedPathTimeGraph::RetrieveSpeedProfile(SpeedData* const speed_data) {
   }
   std::reverse(speed_profile.begin(), speed_profile.end());
 
-  constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
+  static constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
   if (speed_profile.front().t() > kEpsilon ||
       speed_profile.front().s() > kEpsilon) {
     const std::string msg = "Fail to retrieve speed profile.";

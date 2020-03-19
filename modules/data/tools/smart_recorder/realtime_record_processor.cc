@@ -16,10 +16,9 @@
 
 #include "modules/data/tools/smart_recorder/realtime_record_processor.h"
 
-#include <signal.h>
-
 #include <algorithm>
 #include <chrono>
+#include <csignal>
 #include <set>
 #include <sstream>
 #include <thread>
@@ -56,7 +55,7 @@ using cyber::record::RecordReader;
 using cyber::record::RecordViewer;
 
 std::string GetNextRecordFileName(const std::string& record_path) {
-  constexpr int kSuffixLen = 5;
+  static constexpr int kSuffixLen = 5;
   const std::string kInitialSequence = "00000";
   if (record_path.empty()) {
     return kInitialSequence;
@@ -196,7 +195,7 @@ void RealtimeRecordProcessor::MonitorStatus() {
   recorder_->Stop();
   is_terminating_ = true;
   AINFO << "wait for a while trying to complete the restore work";
-  constexpr int kMessageInterval = 1000;
+  static constexpr int kMessageInterval = 1000;
   int interval_counter = 0;
   while (++interval_counter * kMessageInterval < recorder_wait_time_) {
     MonitorManager::Instance()->LogBuffer().WARN(

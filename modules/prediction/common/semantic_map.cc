@@ -16,8 +16,6 @@
 
 #include "modules/prediction/common/semantic_map.h"
 
-#include <cmath>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -35,6 +33,26 @@
 
 namespace apollo {
 namespace prediction {
+
+namespace {
+
+bool ValidFeatureHistory(const ObstacleHistory& obstacle_history,
+                         const double curr_base_x, const double curr_base_y) {
+  if (obstacle_history.feature_size() == 0) {
+    return false;
+  }
+
+  double center_x = curr_base_x + FLAGS_base_image_half_range;
+  double center_y = curr_base_y + FLAGS_base_image_half_range;
+
+  const Feature& feature = obstacle_history.feature(0);
+  double diff_x = feature.position().x() - center_x;
+  double diff_y = feature.position().y() - center_y;
+  double distance = std::hypot(diff_x, diff_y);
+  return distance < FLAGS_caution_distance_threshold;
+}
+
+}  // namespace
 
 SemanticMap::SemanticMap() {}
 
@@ -63,6 +81,11 @@ void SemanticMap::RunCurrFrame(
     curr_base_x_ = base_x_;
     curr_base_y_ = base_y_;
     task_future_ = cyber::Async(&SemanticMap::DrawBaseMapThread, this);
+    // This is only for the first frame without base image yet
+    if (!started_drawing_) {
+      started_drawing_ = true;
+      return;
+    }
   }
 
   // Draw all obstacles_history
@@ -344,6 +367,12 @@ bool SemanticMap::GetMapById(const int obstacle_id, cv::Mat* feature_map) {
       obstacle_id_history_map_.end()) {
     return false;
   }
+  const auto& obstacle_history = obstacle_id_history_map_[obstacle_id];
+
+  if (!ValidFeatureHistory(obstacle_history, curr_base_x_, curr_base_y_)) {
+    return false;
+  }
+
   cv::Mat output_img =
       CropByHistory(obstacle_id_history_map_[obstacle_id],
                     cv::Scalar(0, 0, 255), curr_base_x_, curr_base_y_);

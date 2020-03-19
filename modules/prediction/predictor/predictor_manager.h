@@ -59,7 +59,8 @@ class PredictorManager {
    * @param Adc trajectory container
    * @param Obstacles container
    */
-  void Run(const ADCTrajectoryContainer* adc_trajectory_container,
+  void Run(const apollo::perception::PerceptionObstacles& perception_obstacles,
+           const ADCTrajectoryContainer* adc_trajectory_container,
            ObstaclesContainer* obstacles_container);
 
   /**
@@ -100,10 +101,13 @@ class PredictorManager {
    */
   void RegisterPredictors();
 
-  void PredictObstacles(const ADCTrajectoryContainer* adc_trajectory_container,
-                        ObstaclesContainer* obstacles_container);
+  void PredictObstacles(
+      const apollo::perception::PerceptionObstacles& perception_obstacles,
+      const ADCTrajectoryContainer* adc_trajectory_container,
+      ObstaclesContainer* obstacles_container);
 
   void PredictObstaclesInParallel(
+      const apollo::perception::PerceptionObstacles& perception_obstacles,
       const ADCTrajectoryContainer* adc_trajectory_container,
       ObstaclesContainer* obstacles_container);
 
@@ -113,11 +117,25 @@ class PredictorManager {
 
   void InitDefaultPredictors(const ObstacleConf& conf);
 
-  Predictor* GetVehiclePredictor(const Obstacle& obstacle);
+  void RunVehiclePredictor(
+      const ADCTrajectoryContainer* adc_trajectory_container,
+      Obstacle* obstacle, ObstaclesContainer* obstacles_container);
 
-  Predictor* GetCyclistPredictor(const Obstacle& obstacle);
+  void RunPedestrianPredictor(
+      const ADCTrajectoryContainer* adc_trajectory_container,
+      Obstacle* obstacle, ObstaclesContainer* obstacles_container);
 
-  Predictor* GetDefaultPredictor(const Obstacle& obstacle);
+  void RunCyclistPredictor(
+      const ADCTrajectoryContainer* adc_trajectory_container,
+      Obstacle* obstacle, ObstaclesContainer* obstacles_container);
+
+  void RunDefaultPredictor(
+      const ADCTrajectoryContainer* adc_trajectory_container,
+      Obstacle* obstacle, ObstaclesContainer* obstacles_container);
+
+  void RunEmptyPredictor(const ADCTrajectoryContainer* adc_trajectory_container,
+                         Obstacle* obstacle,
+                         ObstaclesContainer* obstacles_container);
 
  private:
   std::map<ObstacleConf::PredictorType, std::unique_ptr<Predictor>> predictors_;
@@ -138,7 +156,7 @@ class PredictorManager {
       ObstacleConf::FREE_MOVE_PREDICTOR;
 
   ObstacleConf::PredictorType pedestrian_predictor_ =
-      ObstacleConf::REGIONAL_PREDICTOR;
+      ObstacleConf::FREE_MOVE_PREDICTOR;
 
   ObstacleConf::PredictorType default_on_lane_predictor_ =
       ObstacleConf::LANE_SEQUENCE_PREDICTOR;
@@ -151,6 +169,9 @@ class PredictorManager {
 
   ObstacleConf::PredictorType vehicle_in_junction_caution_predictor_ =
       ObstacleConf::INTERACTION_PREDICTOR;
+
+  ObstacleConf::PredictorType vehicle_default_caution_predictor_ =
+      ObstacleConf::EXTRAPOLATION_PREDICTOR;
 
   PredictionObstacles prediction_obstacles_;
 

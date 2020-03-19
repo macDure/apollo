@@ -15,9 +15,6 @@
  *****************************************************************************/
 #pragma once
 
-#include <string>
-#include <unordered_map>
-
 #include "modules/dreamview/proto/hmi_mode.pb.h"
 #include "modules/monitor/common/recurrent_runner.h"
 #include "modules/monitor/proto/system_status.pb.h"
@@ -38,12 +35,14 @@ class ResourceMonitor : public RecurrentRunner {
       const apollo::dreamview::ResourceMonitorConfig& config,
       ComponentStatus* status);
   static void CheckCPUUsage(
-      const int pid, const apollo::dreamview::ResourceMonitorConfig& config,
+      const apollo::dreamview::ResourceMonitorConfig& config,
       ComponentStatus* status);
   static void CheckMemoryUsage(
-      const int pid, const apollo::dreamview::ResourceMonitorConfig& config,
+      const apollo::dreamview::ResourceMonitorConfig& config,
       ComponentStatus* status);
-  static std::unordered_map<std::string, uint64_t> prev_jiffies_map_;
+  static void CheckDiskLoads(
+      const apollo::dreamview::ResourceMonitorConfig& config,
+      ComponentStatus* status);
 };
 
 }  // namespace monitor

@@ -42,10 +42,10 @@ DualVariableWarmStartSlackOSQPInterface::
       obstacles_A_(obstacles_A),
       obstacles_b_(obstacles_b),
       xWS_(xWS) {
-  CHECK(horizon < std::numeric_limits<int>::max())
+  ACHECK(horizon < std::numeric_limits<int>::max())
       << "Invalid cast on horizon in open space planner";
   horizon_ = static_cast<int>(horizon);
-  CHECK(obstacles_num < std::numeric_limits<int>::max())
+  ACHECK(obstacles_num < std::numeric_limits<int>::max())
       << "Invalid cast on obstacles_num in open space planner";
   obstacles_num_ = static_cast<int>(obstacles_num);
   w_ev_ = ego_(1, 0) + ego_(3, 0);
@@ -302,7 +302,6 @@ bool DualVariableWarmStartSlackOSQPInterface::optimize() {
 void DualVariableWarmStartSlackOSQPInterface::checkSolution(
     const Eigen::MatrixXd& l_warm_up, const Eigen::MatrixXd& n_warm_up) {
   // TODO(Runxin): extend
-  return;
 }
 
 void DualVariableWarmStartSlackOSQPInterface::assembleP(

@@ -14,8 +14,6 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include <thread>
-
 #include "modules/common/configs/config_gflags.h"
 #include "modules/common/time/time.h"
 #include "modules/map/hdmap/hdmap_util.h"
@@ -52,6 +50,7 @@ class SunnyvaleBigLoopTest : public PlanningTestBase {
     FLAGS_test_data_dir = "modules/planning/testdata/sunnyvale_big_loop_test";
     FLAGS_planning_upper_speed_limit = 12.5;
 
+    FLAGS_enable_scenario_pull_over = false;
     FLAGS_enable_scenario_stop_sign = false;
     FLAGS_enable_scenario_traffic_light = false;
     FLAGS_enable_rss_info = false;
@@ -153,7 +152,7 @@ TEST_F(SunnyvaleBigLoopTest, stop_sign_03) {
 }
 
 /*
- * kee_clear: keep clear zone clear
+ * keep_clear: keep clear zone clear
  * bag: 2018-05-22-13-59-27/2018-05-22-14-09-29_10.bag
  * decision: not stopped by KEEP_CLEAR
  */
@@ -173,7 +172,7 @@ TEST_F(SunnyvaleBigLoopTest, keep_clear_01) {
 }
 
 /*
- * kee_clear: vehicle inside KEEP Clear zone, with speed and BLOCKING
+ * keep_clear: vehicle inside KEEP Clear zone, with speed and BLOCKING
  * bag: 2018-05-22-13-59-27/2018-05-22-14-13-29_14.bag
  * decision: STOP
  */
@@ -193,7 +192,7 @@ TEST_F(SunnyvaleBigLoopTest, keep_clear_02) {
 }
 
 /*
- * kee_clear: vehicle inside KEEP Clear zone, with speed and NOT BLOCKING
+ * keep_clear: vehicle inside KEEP Clear zone, with speed and NOT BLOCKING
  * bag: 2018-05-22-13-59-27/2018-05-22-14-13-29_14.bag
  * decision: CRUISE
  */

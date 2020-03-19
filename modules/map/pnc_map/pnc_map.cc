@@ -66,7 +66,7 @@ const hdmap::HDMap *PncMap::hdmap() const { return hdmap_; }
 LaneWaypoint PncMap::ToLaneWaypoint(
     const routing::LaneWaypoint &waypoint) const {
   auto lane = hdmap_->GetLaneById(hdmap::MakeMapId(waypoint.id()));
-  CHECK(lane) << "Invalid lane id: " << waypoint.id();
+  ACHECK(lane) << "Invalid lane id: " << waypoint.id();
   return LaneWaypoint(lane, waypoint.s());
 }
 
@@ -80,7 +80,7 @@ double PncMap::LookForwardDistance(double velocity) {
 
 LaneSegment PncMap::ToLaneSegment(const routing::LaneSegment &segment) const {
   auto lane = hdmap_->GetLaneById(hdmap::MakeMapId(segment.id()));
-  CHECK(lane) << "Invalid lane id: " << segment.id();
+  ACHECK(lane) << "Invalid lane id: " << segment.id();
   return LaneSegment(lane, segment.start_s(), segment.end_s());
 }
 
@@ -534,7 +534,7 @@ bool PncMap::GetNearestPointFromRouting(const VehicleState &state,
         return false;
       }
       // Use large epsilon to allow projection diff
-      constexpr double kEpsilon = 0.5;
+      static constexpr double kEpsilon = 0.5;
       if (s > (lane->total_length() + kEpsilon) || (s + kEpsilon) < 0.0) {
         continue;
       }
@@ -580,10 +580,17 @@ LaneInfoConstPtr PncMap::GetRoutePredecessor(LaneInfoConstPtr lane) const {
   if (lane->lane().predecessor_id().empty()) {
     return nullptr;
   }
-  hdmap::Id preferred_id = lane->lane().predecessor_id(0);
+
+  std::unordered_set<std::string> predecessor_ids;
   for (const auto &lane_id : lane->lane().predecessor_id()) {
-    if (range_lane_ids_.count(lane_id.id()) != 0) {
-      preferred_id = lane_id;
+    predecessor_ids.insert(lane_id.id());
+  }
+
+  hdmap::Id preferred_id = lane->lane().predecessor_id(0);
+  for (size_t i = 1; i < route_indices_.size(); ++i) {
+    auto &lane = route_indices_[i].segment.lane->id();
+    if (predecessor_ids.count(lane.id()) != 0) {
+      preferred_id = lane;
       break;
     }
   }
@@ -619,7 +626,7 @@ bool PncMap::ExtendSegments(const RouteSegments &segments, double start_s,
     return false;
   }
   std::unordered_set<std::string> unique_lanes;
-  constexpr double kRouteEpsilon = 1e-3;
+  static constexpr double kRouteEpsilon = 1e-3;
   // Extend the trajectory towards the start of the trajectory.
   if (start_s < 0) {
     const auto &first_segment = *segments.begin();

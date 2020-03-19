@@ -16,9 +16,9 @@
 
 #include "modules/localization/msf/local_pyramid_map/base_map/base_map.h"
 
+#include <boost/filesystem.hpp>
 #include <set>
 #include <string>
-#include "boost/filesystem.hpp"
 
 #include "modules/localization/msf/common/util/file_utility.h"
 
@@ -250,7 +250,6 @@ void BaseMap::LoadMapNodeThreadSafety(const MapNodeIndex& index,
   if (node_remove) {
     map_node_pool_->FreeMapNode(node_remove);
   }
-  return;
 }
 
 void BaseMap::PreloadMapArea(const Eigen::Vector3d& location,
@@ -382,7 +381,6 @@ void BaseMap::PreloadMapArea(const Eigen::Vector3d& location,
   }
 
   this->PreloadMapNodes(&map_ids);
-  return;
 }
 
 bool BaseMap::LoadMapArea(const Eigen::Vector3d& seed_pt3d,

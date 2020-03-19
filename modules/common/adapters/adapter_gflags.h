@@ -31,6 +31,8 @@ DECLARE_string(monitor_topic);
 DECLARE_string(pad_topic);
 DECLARE_string(control_command_topic);
 DECLARE_string(control_preprocessor_topic);
+DECLARE_string(control_local_view_topic);
+DECLARE_string(control_core_command_topic);
 DECLARE_string(pointcloud_topic);
 DECLARE_string(pointcloud_16_front_up_topic);
 DECLARE_string(pointcloud_64_topic);
@@ -120,9 +122,6 @@ DECLARE_string(tf_static_topic);
 
 // Recorder status topic
 DECLARE_string(recorder_status_topic);
-
-// simulation clock topic
-DECLARE_string(tick_topic);
 
 // Latency recording topic
 DECLARE_string(latency_recording_topic);

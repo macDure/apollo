@@ -22,8 +22,6 @@
 #pragma once
 
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "modules/prediction/predictor/sequence/sequence_predictor.h"
 
@@ -47,8 +45,9 @@ class ExtrapolationPredictor : public SequencePredictor {
    * @param ADC trajectory container
    * @param Obstacle pointer
    * @param Obstacles container
+   * @return If predicted successfully
    */
-  void Predict(const ADCTrajectoryContainer* adc_trajectory_container,
+  bool Predict(const ADCTrajectoryContainer* adc_trajectory_container,
                Obstacle* obstacle,
                ObstaclesContainer* obstacles_container) override;
 

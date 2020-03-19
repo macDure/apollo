@@ -77,14 +77,14 @@ Obstacle::Obstacle(const std::string& id,
       perception_obstacle.polygon_point_size() <= 2) {
     perception_bounding_box_.GetAllCorners(&polygon_points);
   } else {
-    CHECK(perception_obstacle.polygon_point_size() > 2)
+    ACHECK(perception_obstacle.polygon_point_size() > 2)
         << "object " << id << "has less than 3 polygon points";
     for (const auto& point : perception_obstacle.polygon_point()) {
       polygon_points.emplace_back(point.x(), point.y());
     }
   }
-  CHECK(common::math::Polygon2d::ComputeConvexHull(polygon_points,
-                                                   &perception_polygon_))
+  ACHECK(common::math::Polygon2d::ComputeConvexHull(polygon_points,
+                                                    &perception_polygon_))
       << "object[" << id << "] polygon is not a valid convex hull.\n"
       << perception_obstacle.DebugString();
 
@@ -294,7 +294,7 @@ double Obstacle::MinRadiusStopDistance(
   if (min_radius_stop_distance_ > 0) {
     return min_radius_stop_distance_;
   }
-  constexpr double stop_distance_buffer = 0.5;
+  static constexpr double stop_distance_buffer = 0.5;
   const double min_turn_radius = VehicleConfigHelper::MinSafeTurnRadius();
   double lateral_diff =
       vehicle_param.width() / 2.0 + std::max(std::fabs(sl_boundary_.start_l()),
@@ -419,7 +419,7 @@ bool Obstacle::BuildTrajectoryStBoundary(const ReferenceLine& reference_line,
     last_index = i;
 
     // skip if object is entirely on one side of reference line.
-    constexpr double kSkipLDistanceFactor = 0.4;
+    static constexpr double kSkipLDistanceFactor = 0.4;
     const double skip_l_distance =
         (object_boundary.end_s() - object_boundary.start_s()) *
             kSkipLDistanceFactor +
@@ -437,7 +437,7 @@ bool Obstacle::BuildTrajectoryStBoundary(const ReferenceLine& reference_line,
       // skip if behind reference line
       continue;
     }
-    constexpr double kSparseMappingS = 20.0;
+    static constexpr double kSparseMappingS = 20.0;
     const double st_boundary_delta_s =
         (std::fabs(object_boundary.start_s() - adc_start_s) > kSparseMappingS)
             ? kStBoundarySparseDeltaS
@@ -671,7 +671,7 @@ void Obstacle::AddLateralDecision(const std::string& decider_tag,
   decider_tags_.push_back(decider_tag);
 }
 
-const std::string Obstacle::DebugString() const {
+std::string Obstacle::DebugString() const {
   std::stringstream ss;
   ss << "Obstacle id: " << id_;
   for (size_t i = 0; i < decisions_.size(); ++i) {
@@ -696,6 +696,7 @@ const SLBoundary& Obstacle::PerceptionSLBoundary() const {
 
 void Obstacle::set_path_st_boundary(const STBoundary& boundary) {
   path_st_boundary_ = boundary;
+  path_st_boundary_initialized_ = true;
 }
 
 void Obstacle::SetStBoundaryType(const STBoundary::BoundaryType type) {

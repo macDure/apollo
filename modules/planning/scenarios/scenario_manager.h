@@ -17,7 +17,6 @@
 #pragma once
 
 #include <memory>
-#include <set>
 #include <unordered_map>
 
 #include "modules/planning/proto/planning_config.pb.h"
@@ -49,8 +48,6 @@ class ScenarioManager final {
 
   ScenarioConfig::ScenarioType SelectBareIntersectionScenario(
       const Frame& frame, const hdmap::PathOverlap& pnc_junction_overlap);
-
-  ScenarioConfig::ScenarioType SelectChangeLaneScenario(const Frame& frame);
 
   ScenarioConfig::ScenarioType SelectPullOverScenario(const Frame& frame);
 

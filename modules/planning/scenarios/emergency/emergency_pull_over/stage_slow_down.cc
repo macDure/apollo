@@ -20,10 +20,6 @@
 
 #include "modules/planning/scenarios/emergency/emergency_pull_over/stage_slow_down.h"
 
-#include <algorithm>
-#include <string>
-#include <vector>
-
 #include "cyber/common/log.h"
 
 #include "modules/common/vehicle_state/vehicle_state_provider.h"
@@ -70,7 +66,7 @@ Stage::StageStatus EmergencyPullOverStageSlowDown::Process(
   }
 
   // check slow enough
-  constexpr double kSpeedTolarence = 1.0;
+  static constexpr double kSpeedTolarence = 1.0;
   if (adc_speed - target_slow_down_speed <= kSpeedTolarence) {
     return FinishStage();
   }

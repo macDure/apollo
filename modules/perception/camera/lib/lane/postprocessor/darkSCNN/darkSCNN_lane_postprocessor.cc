@@ -229,7 +229,7 @@ bool DarkSCNNLanePostprocessor::Process2D(
     Eigen::Matrix<float, 4, 1> coeff;
     // Solve linear system to estimate polynomial coefficients
     if (RansacFitting<float>(xy_points[i], &selected_xy_points, &coeff, 200,
-                      static_cast<int>(minNumPoints_), 0.1f)) {
+                             static_cast<int>(minNumPoints_), 0.1f)) {
       coeffs[i] = coeff;
 
       xy_points[i].clear();
@@ -436,7 +436,6 @@ void DarkSCNNLanePostprocessor::ConvertImagePoint2Camera(CameraFrame* frame) {
       camera_point_set.push_back(camera_point);
     }
   }
-  return;
 }
 
 // @brief: Fit camera lane line using polynomial
@@ -474,7 +473,6 @@ void DarkSCNNLanePostprocessor::PolyFitCameraLaneline(CameraFrame* frame) {
     lane_objects[line_index].curve_camera_coord.x_end = x_end;
     lane_objects[line_index].use_type = base::LaneLineUseType::REAL;
   }
-  return;
 }
 
 std::string DarkSCNNLanePostprocessor::Name() const {

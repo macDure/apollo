@@ -19,6 +19,7 @@
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
 #include "modules/common/adapters/adapter_gflags.h"
+#include "modules/common/latency_recorder/latency_recorder.h"
 #include "modules/common/time/time.h"
 #include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/control/common/control_gflags.h"
@@ -38,11 +39,11 @@ ControlComponent::ControlComponent()
     : monitor_logger_buffer_(common::monitor::MonitorMessageItem::CONTROL) {}
 
 bool ControlComponent::Init() {
-  // init_time_ = Clock::NowInSeconds();
+  init_time_ = Clock::Now();
 
   AINFO << "Control init, starting ...";
 
-  CHECK(
+  ACHECK(
       cyber::common::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_))
       << "Unable to load control conf file: " + FLAGS_control_conf_file;
 
@@ -50,8 +51,12 @@ bool ControlComponent::Init() {
 
   AINFO << "Conf file: " << ConfigFilePath() << " is loaded.";
 
-  // set controller
-  if (!controller_agent_.Init(&control_conf_).ok()) {
+  // initial controller agent when not using control submodules
+  ADEBUG << "FLAGS_use_control_submodules: " << FLAGS_use_control_submodules;
+  if (!FLAGS_use_control_submodules &&
+      !controller_agent_.Init(&control_conf_).ok()) {
+    // set controller
+    ADEBUG << "original control";
     monitor_logger_buffer_.ERROR("Control init controller failed! Stopping...");
     return false;
   }
@@ -62,7 +67,7 @@ bool ControlComponent::Init() {
 
   chassis_reader_ =
       node_->CreateReader<Chassis>(chassis_reader_config, nullptr);
-  CHECK(chassis_reader_ != nullptr);
+  ACHECK(chassis_reader_ != nullptr);
 
   cyber::ReaderConfig planning_reader_config;
   planning_reader_config.channel_name = FLAGS_planning_trajectory_topic;
@@ -70,7 +75,7 @@ bool ControlComponent::Init() {
 
   trajectory_reader_ =
       node_->CreateReader<ADCTrajectory>(planning_reader_config, nullptr);
-  CHECK(trajectory_reader_ != nullptr);
+  ACHECK(trajectory_reader_ != nullptr);
 
   cyber::ReaderConfig localization_reader_config;
   localization_reader_config.channel_name = FLAGS_localization_topic;
@@ -79,7 +84,7 @@ bool ControlComponent::Init() {
 
   localization_reader_ = node_->CreateReader<LocalizationEstimate>(
       localization_reader_config, nullptr);
-  CHECK(localization_reader_ != nullptr);
+  ACHECK(localization_reader_ != nullptr);
 
   cyber::ReaderConfig pad_msg_reader_config;
   pad_msg_reader_config.channel_name = FLAGS_pad_topic;
@@ -87,11 +92,17 @@ bool ControlComponent::Init() {
 
   pad_msg_reader_ =
       node_->CreateReader<PadMessage>(pad_msg_reader_config, nullptr);
-  CHECK(pad_msg_reader_ != nullptr);
+  ACHECK(pad_msg_reader_ != nullptr);
 
-  control_cmd_writer_ =
-      node_->CreateWriter<ControlCommand>(FLAGS_control_command_topic);
-  CHECK(control_cmd_writer_ != nullptr);
+  if (!FLAGS_use_control_submodules) {
+    control_cmd_writer_ =
+        node_->CreateWriter<ControlCommand>(FLAGS_control_command_topic);
+    ACHECK(control_cmd_writer_ != nullptr);
+  } else {
+    local_view_writer_ =
+        node_->CreateWriter<LocalView>(FLAGS_control_local_view_topic);
+    ACHECK(local_view_writer_ != nullptr);
+  }
 
   // set initial vehicle state by cmd
   // need to sleep, because advertised channel is not ready immediately
@@ -110,6 +121,7 @@ bool ControlComponent::Init() {
 }
 
 void ControlComponent::OnPad(const std::shared_ptr<PadMessage> &pad) {
+  std::lock_guard<std::mutex> lock(mutex_);
   pad_msg_.CopyFrom(*pad);
   ADEBUG << "Received Pad Msg:" << pad_msg_.DebugString();
   AERROR_IF(!pad_msg_.has_action()) << "pad message check failed!";
@@ -147,13 +159,6 @@ void ControlComponent::OnMonitor(
 
 Status ControlComponent::ProduceControlCommand(
     ControlCommand *control_command) {
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    local_view_.mutable_chassis()->CopyFrom(latest_chassis_);
-    local_view_.mutable_trajectory()->CopyFrom(latest_trajectory_);
-    local_view_.mutable_localization()->CopyFrom(latest_localization_);
-  }
-
   Status status = CheckInput(&local_view_);
   // check data
 
@@ -227,8 +232,7 @@ Status ControlComponent::ProduceControlCommand(
         local_view_.trajectory().header());
 
     if (local_view_.trajectory().is_replan()) {
-      latest_replan_trajectory_header_.CopyFrom(
-          local_view_.trajectory().header());
+      latest_replan_trajectory_header_ = local_view_.trajectory().header();
     }
 
     if (latest_replan_trajectory_header_.has_sequence_num()) {
@@ -272,7 +276,8 @@ Status ControlComponent::ProduceControlCommand(
 }
 
 bool ControlComponent::Proc() {
-  double start_timestamp = Clock::NowInSeconds();
+  const auto start_time =
+      FLAGS_use_system_time_in_control ? absl::Now() : Clock::Now();
 
   chassis_reader_->Observe();
   const auto &chassis_msg = chassis_reader_->GetLatestObserved();
@@ -305,17 +310,54 @@ bool ControlComponent::Proc() {
     OnPad(pad_msg);
   }
 
-  // do something according to pad message
-  if (pad_msg_.action() == DrivingAction::RESET) {
-    AINFO << "Control received RESET action!";
-    estop_ = false;
-    estop_reason_.clear();
+  {
+    // TODO(SHU): to avoid redundent copy
+    std::lock_guard<std::mutex> lock(mutex_);
+    local_view_.mutable_chassis()->CopyFrom(latest_chassis_);
+    local_view_.mutable_trajectory()->CopyFrom(latest_trajectory_);
+    local_view_.mutable_localization()->CopyFrom(latest_localization_);
+    if (pad_msg != nullptr) {
+      local_view_.mutable_pad_msg()->CopyFrom(pad_msg_);
+    }
   }
-  pad_received_ = true;
+
+  // use control submodules
+  if (FLAGS_use_control_submodules) {
+    local_view_.mutable_header()->set_lidar_timestamp(
+        local_view_.trajectory().header().lidar_timestamp());
+    local_view_.mutable_header()->set_camera_timestamp(
+        local_view_.trajectory().header().camera_timestamp());
+    local_view_.mutable_header()->set_radar_timestamp(
+        local_view_.trajectory().header().radar_timestamp());
+    common::util::FillHeader(FLAGS_control_local_view_topic, &local_view_);
+
+    const auto end_time = Clock::Now();
+
+    // measure latency
+    static apollo::common::LatencyRecorder latency_recorder(
+        FLAGS_control_local_view_topic);
+    latency_recorder.AppendLatencyRecord(
+        local_view_.trajectory().header().lidar_timestamp(), start_time,
+        end_time);
+
+    local_view_writer_->Write(local_view_);
+    return true;
+  }
+
+  if (pad_msg != nullptr) {
+    ADEBUG << "pad_msg: " << pad_msg_.ShortDebugString();
+    if (pad_msg_.action() == DrivingAction::RESET) {
+      AINFO << "Control received RESET action!";
+      estop_ = false;
+      estop_reason_.clear();
+    }
+    pad_received_ = true;
+  }
 
   if (control_conf_.is_control_test_mode() &&
       control_conf_.control_test_duration() > 0 &&
-      (start_timestamp - init_time_) > control_conf_.control_test_duration()) {
+      absl::ToDoubleSeconds(start_time - init_time_) >
+          control_conf_.control_test_duration()) {
     AERROR << "Control finished testing. exit";
     return false;
   }
@@ -326,19 +368,10 @@ bool ControlComponent::Proc() {
   AERROR_IF(!status.ok()) << "Failed to produce control command:"
                           << status.error_message();
 
-  double end_timestamp = Clock::NowInSeconds();
-
   if (pad_received_) {
     control_command.mutable_pad_msg()->CopyFrom(pad_msg_);
     pad_received_ = false;
   }
-
-  const double time_diff_ms = (end_timestamp - start_timestamp) * 1000;
-  control_command.mutable_latency_stats()->set_total_time_ms(time_diff_ms);
-  control_command.mutable_latency_stats()->set_total_time_exceeded(
-      time_diff_ms > control_conf_.control_period());
-  ADEBUG << "control cycle time is: " << time_diff_ms << " ms.";
-  status.Save(control_command.mutable_header()->mutable_status());
 
   // forward estop reason among following control frames.
   if (estop_) {
@@ -361,7 +394,28 @@ bool ControlComponent::Proc() {
     return true;
   }
 
-  control_cmd_writer_->Write(std::make_shared<ControlCommand>(control_command));
+  const auto end_time =
+      FLAGS_use_system_time_in_control ? absl::Now() : Clock::Now();
+  const double time_diff_ms = absl::ToDoubleMilliseconds(end_time - start_time);
+  ADEBUG << "total control time spend: " << time_diff_ms << " ms.";
+
+  control_command.mutable_latency_stats()->set_total_time_ms(time_diff_ms);
+  control_command.mutable_latency_stats()->set_total_time_exceeded(
+      time_diff_ms > absl::ToDoubleMilliseconds(
+                         absl::Seconds(control_conf_.control_period())));
+  ADEBUG << "control cycle time is: " << time_diff_ms << " ms.";
+  status.Save(control_command.mutable_header()->mutable_status());
+
+  // measure latency
+  if (local_view_.trajectory().header().has_lidar_timestamp()) {
+    static apollo::common::LatencyRecorder latency_recorder(
+        FLAGS_control_command_topic);
+    latency_recorder.AppendLatencyRecord(
+        local_view_.trajectory().header().lidar_timestamp(), start_time,
+        end_time);
+  }
+
+  control_cmd_writer_->Write(control_command);
   return true;
 }
 

@@ -16,7 +16,7 @@
 
 #include "modules/localization/msf/msf_localization.h"
 
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 
 #include "cyber/common/file.h"
 #include "modules/common/math/euler_angles_zxy.h"
@@ -135,9 +135,9 @@ void MSFLocalization::InitParams() {
     double uncertainty_y = 0.0;
     double uncertainty_z = 0.0;
     AINFO << "Ant imu lever arm file: " << FLAGS_ant_imu_leverarm_file;
-    CHECK(LoadGnssAntennaExtrinsic(FLAGS_ant_imu_leverarm_file, &offset_x,
-                                   &offset_y, &offset_z, &uncertainty_x,
-                                   &uncertainty_y, &uncertainty_z));
+    ACHECK(LoadGnssAntennaExtrinsic(FLAGS_ant_imu_leverarm_file, &offset_x,
+                                    &offset_y, &offset_z, &uncertainty_x,
+                                    &uncertainty_y, &uncertainty_z));
     localization_param_.ant_imu_leverarm_file = FLAGS_ant_imu_leverarm_file;
 
     localization_param_.imu_to_ant_offset.offset_x = offset_x;
@@ -201,8 +201,6 @@ void MSFLocalization::OnPointCloud(
     // publish lidar message to debug
     publisher_->PublishLocalizationMsfLidar(result.localization());
   }
-
-  return;
 }
 
 void MSFLocalization::OnRawImu(
@@ -237,8 +235,6 @@ void MSFLocalization::OnRawImu(
   }
 
   localization_state_ = result.state();
-
-  return;
 }
 
 void MSFLocalization::OnGnssBestPose(
@@ -257,8 +253,6 @@ void MSFLocalization::OnGnssBestPose(
       result.state() == msf::LocalizationMeasureState::VALID) {
     publisher_->PublishLocalizationMsfGnss(result.localization());
   }
-
-  return;
 }
 
 void MSFLocalization::OnGnssRtkObs(
@@ -277,8 +271,6 @@ void MSFLocalization::OnGnssRtkObs(
       result.state() == msf::LocalizationMeasureState::VALID) {
     publisher_->PublishLocalizationMsfGnss(result.localization());
   }
-
-  return;
 }
 
 void MSFLocalization::OnGnssRtkEph(
@@ -290,7 +282,6 @@ void MSFLocalization::OnGnssRtkEph(
   }
 
   localization_integ_.RawEphemerisProcess(*gnss_orbit_msg);
-  return;
 }
 
 void MSFLocalization::OnGnssHeading(
@@ -301,7 +292,6 @@ void MSFLocalization::OnGnssHeading(
     return;
   }
   localization_integ_.GnssHeadingProcess(*gnss_heading_msg);
-  return;
 }
 
 void MSFLocalization::SetPublisher(

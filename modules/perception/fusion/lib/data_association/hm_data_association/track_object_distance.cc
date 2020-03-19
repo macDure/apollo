@@ -15,12 +15,12 @@
  *****************************************************************************/
 #include "modules/perception/fusion/lib/data_association/hm_data_association/track_object_distance.h"
 
+#include <boost/format.hpp>
+
 #include <algorithm>
 #include <limits>
 #include <map>
 #include <utility>
-
-#include "boost/format.hpp"
 
 #include "modules/perception/base/camera.h"
 #include "modules/perception/base/point.h"
@@ -65,7 +65,6 @@ void TrackObjectDistance::GetModified2DRadarBoxVertices(
         camera_intrinsic->Project(local_box_vertex.head(3).cast<float>());
     radar_box2d_vertices->push_back(temp_vertex.cast<double>());
   }
-  return;
 }
 
 base::BaseCameraModelPtr TrackObjectDistance::QueryCameraModel(

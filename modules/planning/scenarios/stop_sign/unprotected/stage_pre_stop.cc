@@ -76,7 +76,7 @@ Stage::StageStatus StopSignUnprotectedStagePreStop::Process(
     return FinishScenario();
   }
 
-  constexpr double kPassStopLineBuffer = 0.3;  // unit: m
+  static constexpr double kPassStopLineBuffer = 0.3;  // unit: m
   const double adc_front_edge_s = reference_line_info.AdcSlBoundary().end_s();
   const double distance_adc_pass_stop_sign =
       adc_front_edge_s - current_stop_sign_overlap->start_s;
@@ -224,10 +224,10 @@ bool StopSignUnprotectedStagePreStop::CheckADCStop(
     const double adc_front_edge_s, const double stop_line_s) {
   const double adc_speed =
       common::VehicleStateProvider::Instance()->linear_velocity();
-  const double max_adc_stop_speed =
-      common::VehicleConfigHelper::Instance()->GetConfig()
-          .vehicle_param()
-          .max_abs_speed_when_stopped();
+  const double max_adc_stop_speed = common::VehicleConfigHelper::Instance()
+                                        ->GetConfig()
+                                        .vehicle_param()
+                                        .max_abs_speed_when_stopped();
   if (adc_speed > max_adc_stop_speed) {
     ADEBUG << "ADC not stopped: speed[" << adc_speed << "]";
     return false;

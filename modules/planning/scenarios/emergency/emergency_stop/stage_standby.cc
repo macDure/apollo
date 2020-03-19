@@ -37,7 +37,6 @@ namespace scenario {
 namespace emergency_stop {
 
 using apollo::common::TrajectoryPoint;
-using apollo::common::VehicleConfigHelper;
 
 Stage::StageStatus EmergencyStopStageStandby::Process(
     const TrajectoryPoint& planning_init_point, Frame* frame) {
@@ -58,8 +57,7 @@ Stage::StageStatus EmergencyStopStageStandby::Process(
       PlanningContext::Instance()->planning_status().emergency_stop();
   if (emergency_stop_status.has_stop_fence_point()) {
     common::SLPoint stop_fence_sl;
-    reference_line.XYToSL({emergency_stop_status.stop_fence_point().x(),
-                           emergency_stop_status.stop_fence_point().y()},
+    reference_line.XYToSL(emergency_stop_status.stop_fence_point(),
                           &stop_fence_sl);
     if (stop_fence_sl.s() > adc_front_edge_s) {
       stop_fence_exist = true;
@@ -68,7 +66,7 @@ Stage::StageStatus EmergencyStopStageStandby::Process(
   }
 
   if (!stop_fence_exist) {
-    constexpr double kBuffer = 2.0;
+    static constexpr double kBuffer = 2.0;
     stop_line_s = adc_front_edge_s + stop_distance + kBuffer;
     const auto& stop_fence_point =
         reference_line.GetReferencePoint(stop_line_s);

@@ -16,7 +16,8 @@
 
 #include "modules/localization/msf/local_tool/local_visualization/engine/visualization_engine.h"
 
-#include "boost/filesystem.hpp"
+#include <boost/filesystem.hpp>
+
 #include "cyber/common/file.h"
 #include "cyber/common/log.h"
 
@@ -672,7 +673,6 @@ void VisualizationEngine::GenerateMutiResolutionImages(
               image_visual_path_dst.length() - dst_folder.length() - 3)
        << std::endl;
   outf.close();
-  return;
 }
 
 bool VisualizationEngine::InitOtherParams(const std::string &params_file) {

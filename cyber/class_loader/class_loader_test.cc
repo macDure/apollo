@@ -15,11 +15,13 @@
  *****************************************************************************/
 #include "cyber/class_loader/class_loader.h"
 
-#include <gtest/gtest.h>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include "gtest/gtest.h"
+
 #include "cyber/class_loader/class_loader_manager.h"
 #include "cyber/class_loader/test/base.h"
 #include "cyber/cyber.h"
@@ -80,8 +82,6 @@ TEST(ClassLoaderTest, multiTimesLoadunload) {
   ASSERT_TRUE(IsLibraryLoadedByAnybody(LIBRARY_1));
   loader1.UnloadLibrary();
   ASSERT_FALSE(IsLibraryLoadedByAnybody(LIBRARY_1));
-
-  return;
 }
 
 TEST(ClassLoaderManagerTest, testClassLoaderManager) {

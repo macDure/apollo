@@ -22,18 +22,15 @@ cc_binary(
 cc_library(
     name = "preprocessor_submodule_lib",
     srcs = ["preprocessor_submodule.cc"],
-    hdrs = [
-        "preprocessor_submodule.h",
-    ],
+    hdrs = ["preprocessor_submodule.h"],
     copts = [
         "-DMODULE_NAME=\\\"preprocessor_submodule\\\"",
     ],
     deps = [
         "//cyber",
-        "//external:gflags",
         "//modules/canbus/proto:canbus_proto",
-        "//modules/common",
         "//modules/common/adapters:adapter_gflags",
+        "//modules/common/latency_recorder",
         "//modules/common/monitor_log",
         "//modules/common/status",
         "//modules/common/time",
@@ -45,6 +42,7 @@ cc_library(
         "//modules/control/proto:preprocessor_proto",
         "//modules/localization/proto:localization_proto",
         "//modules/planning/proto:planning_proto",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
@@ -58,18 +56,15 @@ cc_binary(
 cc_library(
     name = "mpc_controller_submodule_lib",
     srcs = ["mpc_controller_submodule.cc"],
-    hdrs = [
-        "mpc_controller_submodule.h",
-    ],
+    hdrs = ["mpc_controller_submodule.h"],
     copts = [
         "-DMODULE_NAME=\\\"mpc_controller_submodule\\\"",
     ],
     deps = [
         "//cyber",
-        "//external:gflags",
         "//modules/canbus/proto:canbus_proto",
-        "//modules/common",
         "//modules/common/adapters:adapter_gflags",
+        "//modules/common/latency_recorder",
         "//modules/common/monitor_log",
         "//modules/common/status",
         "//modules/common/time",
@@ -83,7 +78,9 @@ cc_library(
         "//modules/control/proto:preprocessor_proto",
         "//modules/localization/proto:localization_proto",
         "//modules/planning/proto:planning_proto",
+        "@com_github_gflags_gflags//:gflags",
     ],
+    alwayslink = True,
 )
 
 cc_binary(
@@ -96,18 +93,15 @@ cc_binary(
 cc_library(
     name = "lat_lon_controller_submodule_lib",
     srcs = ["lat_lon_controller_submodule.cc"],
-    hdrs = [
-        "lat_lon_controller_submodule.h",
-    ],
+    hdrs = ["lat_lon_controller_submodule.h"],
     copts = [
         "-DMODULE_NAME=\\\"lat_lon_controller_submodule\\\"",
     ],
     deps = [
         "//cyber",
-        "//external:gflags",
         "//modules/canbus/proto:canbus_proto",
-        "//modules/common",
         "//modules/common/adapters:adapter_gflags",
+        "//modules/common/latency_recorder",
         "//modules/common/monitor_log",
         "//modules/common/status",
         "//modules/common/time",
@@ -120,7 +114,9 @@ cc_library(
         "//modules/control/proto:preprocessor_proto",
         "//modules/localization/proto:localization_proto",
         "//modules/planning/proto:planning_proto",
+        "@com_github_gflags_gflags//:gflags",
     ],
+    alwayslink = True,
 )
 
 cc_binary(
@@ -133,18 +129,15 @@ cc_binary(
 cc_library(
     name = "postprocessor_submodule_lib",
     srcs = ["postprocessor_submodule.cc"],
-    hdrs = [
-        "postprocessor_submodule.h",
-    ],
+    hdrs = ["postprocessor_submodule.h"],
     copts = [
         "-DMODULE_NAME=\\\"postprocessor_submodule\\\"",
     ],
     deps = [
         "//cyber",
-        "//external:gflags",
         "//modules/canbus/proto:canbus_proto",
-        "//modules/common",
         "//modules/common/adapters:adapter_gflags",
+        "//modules/common/latency_recorder",
         "//modules/common/monitor_log",
         "//modules/common/status",
         "//modules/common/time",
@@ -157,7 +150,9 @@ cc_library(
         "//modules/control/proto:preprocessor_proto",
         "//modules/localization/proto:localization_proto",
         "//modules/planning/proto:planning_proto",
+        "@com_github_gflags_gflags//:gflags",
     ],
+    alwayslink = True,
 )
 
 cc_binary(

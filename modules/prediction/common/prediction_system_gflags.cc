@@ -60,7 +60,7 @@ DEFINE_int32(max_caution_thread_num, 2,
              "Maximal number of threads for caution obstacles.");
 DEFINE_bool(enable_async_draw_base_image, true,
             "If enable async to draw base image");
-DEFINE_bool(use_cuda, false, "If use cuda for torch.");
+DEFINE_bool(use_cuda, true, "If use cuda for torch.");
 
 // Bag replay timestamp gap
 DEFINE_double(replay_timestamp_gap, 10.0,
@@ -70,6 +70,7 @@ DEFINE_int32(max_num_dump_dataforlearn, 5000,
              "Max number of dataforlearn to dump");
 
 // Submodules
+DEFINE_bool(use_lego, false, "If use lego architecture");
 DEFINE_string(container_topic_name, "/apollo/prediction/container",
               "Container topic name");
 DEFINE_string(adccontainer_topic_name, "/apollo/prediction/adccontainer",
@@ -80,3 +81,6 @@ DEFINE_string(container_submodule_name, "container_submodule",
               "Container submodule name");
 DEFINE_string(evaluator_submodule_name, "evaluator_submodule",
               "Evaluator submodule name");
+DEFINE_string(perception_obstacles_topic_name,
+              "/apollo/prediction/perception_obstacles",
+              "Internal topic of perception obstacles");
