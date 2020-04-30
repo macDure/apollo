@@ -79,6 +79,10 @@ DEFINE_string(scenario_yield_sign_config_file,
               "/apollo/modules/planning/conf/"
               "scenario/yield_sign_config.pb.txt",
               "yield_sign scenario config file");
+DEFINE_string(scenario_test_learning_model_config_file,
+              "/apollo/modules/planning/conf/"
+              "scenario/test_learning_model_config.pb.txt",
+              "test_learning_model scenario config file");
 
 DEFINE_bool(enable_scenario_bare_intersection, true,
             "enable bare_intersection scenarios in planning");
@@ -90,10 +94,10 @@ DEFINE_bool(enable_scenario_pull_over, false,
             "enable pull-over scenario in planning");
 
 DEFINE_bool(enable_scenario_emergency_pull_over, true,
-            "enable emregency-pull-over scenario in planning");
+            "enable emergency-pull-over scenario in planning");
 
 DEFINE_bool(enable_scenario_emergency_stop, true,
-            "enable emregency-stop scenario in planning");
+            "enable emergency-stop scenario in planning");
 
 DEFINE_bool(enable_scenario_side_pass_multiple_parked_obstacles, true,
             "enable ADC to side-pass multiple parked obstacles without"
@@ -101,6 +105,9 @@ DEFINE_bool(enable_scenario_side_pass_multiple_parked_obstacles, true,
 
 DEFINE_bool(enable_scenario_stop_sign, true,
             "enable stop_sign scenarios in planning");
+
+DEFINE_bool(enable_scenario_test_learning_model, false,
+            "enable test learning model scenarios in planning");
 
 DEFINE_bool(enable_scenario_traffic_light, true,
             "enable traffic_light scenarios in planning");

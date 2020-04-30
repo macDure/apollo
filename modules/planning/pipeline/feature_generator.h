@@ -15,7 +15,9 @@
  *****************************************************************************/
 #pragma once
 
+#include <chrono>
 #include <list>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <utility>
@@ -24,6 +26,7 @@
 #include "cyber/common/file.h"
 #include "modules/canbus/proto/chassis.pb.h"
 #include "modules/dreamview/proto/hmi_status.pb.h"
+#include "modules/map/hdmap/hdmap_common.h"
 #include "modules/localization/proto/localization.pb.h"
 #include "modules/perception/proto/traffic_light_detection.pb.h"
 #include "modules/prediction/proto/prediction_obstacle.pb.h"
@@ -40,6 +43,8 @@ class FeatureGenerator {
 
   void ProcessOfflineData(const std::string& record_filename);
 
+  void WriteRemainderData();
+
  private:
   struct ADCCurrentInfo {
     std::pair<double, double> adc_cur_position_;
@@ -55,48 +60,62 @@ class FeatureGenerator {
       const apollo::prediction::PredictionObstacles& prediction_obstacles);
   void OnRoutingResponse(
       const apollo::routing::RoutingResponse& routing_response);
-  void OnTafficLightDetection(
+  void OnTrafficLightDetection(
       const apollo::perception::TrafficLightDetection& traffic_light_detection);
 
-  void GetADCCurrentInfo(ADCCurrentInfo* adc_curr_info);
-  void GenerateObstacleTrajectoryPoint(
+  apollo::hdmap::LaneInfoConstPtr GetCurrentLane(
+      const apollo::common::PointENU& position);
+  int GetADCCurrentRoutingIndex();
+
+  int GetADCCurrentInfo(ADCCurrentInfo* adc_curr_info);
+
+  void GenerateObstacleTrajectory(
+      const int frame_num,
       const int obstacle_id,
       const ADCCurrentInfo& adc_curr_info,
       ObstacleFeature* obstacle_feature);
+
   void GenerateObstaclePrediction(
       const apollo::prediction::PredictionObstacle& prediction_obstacle,
       const ADCCurrentInfo& adc_curr_info,
       ObstacleFeature* obstacle_feature);
+
   void GenerateObstacleFeature(LearningDataFrame* learning_data_frame);
 
-  void GenerateRoutingFeature(LearningDataFrame* learning_data_frame);
+  void GenerateRoutingFeature(const int routing_index,
+                              LearningDataFrame* learning_data_frame);
+
+  void GenerateTrafficLightDetectionFeature(
+      LearningDataFrame* learning_data_frame);
 
   void GenerateADCTrajectoryPoints(
       const std::list<apollo::localization::LocalizationEstimate>&
-          localization_for_label,
+          localizations,
       LearningDataFrame* learning_data_frame);
 
   void GenerateLearningDataFrame();
 
   void WriteOutLearningData(const LearningData& learning_data,
-                            const std::string& file_name);
+                            const int learning_data_file_index);
 
  private:
+  std::chrono::time_point<std::chrono::system_clock> start_time_;
+  std::ofstream log_file_;
+  std::string record_file_name_;
   std::unordered_map<std::string, std::string> map_m_;
   LearningData learning_data_;
   int learning_data_file_index_ = 0;
-  std::list<apollo::localization::LocalizationEstimate>
-      localization_for_label_;
-
+  std::list<apollo::localization::LocalizationEstimate> localizations_;
   std::unordered_map<int, apollo::prediction::PredictionObstacle>
       prediction_obstacles_map_;
   std::unordered_map<int, std::list<PerceptionObstacleFeature>>
       obstacle_history_map_;
   ChassisFeature chassis_feature_;
   std::string map_name_;
+  std::vector<OverlapFeature> overlaps_;
   std::vector<std::pair<std::string, double>> routing_lane_segment_;
-  std::unordered_map<std::string, apollo::perception::TrafficLight::Color>
-        traffic_lights_;
+  double traffic_light_detection_message_timestamp_;
+  std::vector<TrafficLightFeature> traffic_lights_;
   int total_learning_data_frame_num_ = 0;
 };
 
