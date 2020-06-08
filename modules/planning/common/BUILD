@@ -162,6 +162,7 @@ cc_library(
         ":planning_gflags",
         ":st_graph_data",
         "//cyber/common:log",
+        "//modules/common/math",
         "//modules/common/proto:pnc_point_proto",
         "//modules/common/util:point_factory",
         "//modules/common/vehicle_state:vehicle_state_provider",
@@ -485,6 +486,36 @@ cc_library(
         "//modules/routing/proto:routing_proto",
         "//third_party:boost",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "trajectory_evaluator",
+    srcs = ["trajectory_evaluator.cc"],
+    hdrs = ["trajectory_evaluator.h"],
+    copts = [
+        "-DMODULE_NAME=\\\"planning\\\"",
+    ],
+    deps = [
+        "//cyber",
+        "//modules/planning/common:planning_gflags",
+        "//modules/planning/common/util:util_lib",
+        "//modules/planning/pipeline:evaluator_logger",
+        "//modules/planning/proto:learning_data_proto",
+    ],
+)
+
+cc_library(
+    name = "dependency_injector",
+    hdrs = ["dependency_injector.h"],
+    copts = [
+        "-DMODULE_NAME=\\\"planning\\\"",
+    ],
+    deps = [
+        ":ego_info",
+        ":frame",
+        ":history",
+        ":planning_context",
     ],
 )
 

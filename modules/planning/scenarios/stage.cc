@@ -41,9 +41,11 @@ constexpr double kSpeedOptimizationFallbackCost = 2e4;
 // constexpr double kStraightForwardLineCost = 10.0;
 }  // namespace
 
-Stage::Stage(const ScenarioConfig::StageConfig& config) : config_(config) {
+Stage::Stage(const ScenarioConfig::StageConfig& config,
+             const std::shared_ptr<DependencyInjector>& injector)
+    : config_(config), injector_(injector) {
   // set stage_type in PlanningContext
-  PlanningContext::Instance()
+  injector->planning_context()
       ->mutable_planning_status()
       ->mutable_scenario()
       ->set_stage_type(stage_type());
@@ -62,7 +64,7 @@ Stage::Stage(const ScenarioConfig::StageConfig& config) : config_(config) {
         << " used but not configured";
     auto iter = tasks_.find(task_type);
     if (iter == tasks_.end()) {
-      auto ptr = TaskFactory::CreateTask(*config_map[task_type]);
+      auto ptr = TaskFactory::CreateTask(*config_map[task_type], injector_);
       task_list_.push_back(ptr.get());
       tasks_[task_type] = std::move(ptr);
     } else {
@@ -90,9 +92,8 @@ bool Stage::ExecuteTaskOnReferenceLine(
       return false;
     }
 
-    auto ret = common::Status::OK();
     for (auto* task : task_list_) {
-      ret = task->Execute(frame, &reference_line_info);
+      const auto ret = task->Execute(frame, &reference_line_info);
       if (!ret.ok()) {
         AERROR << "Failed to run tasks[" << task->Name()
                << "], Error message: " << ret.error_message();
@@ -102,7 +103,7 @@ bool Stage::ExecuteTaskOnReferenceLine(
 
     if (reference_line_info.speed_data().empty()) {
       *reference_line_info.mutable_speed_data() =
-          SpeedProfileGenerator::GenerateFallbackSpeed();
+          SpeedProfileGenerator::GenerateFallbackSpeed(injector_->ego_info());
       reference_line_info.AddCost(kSpeedOptimizationFallbackCost);
       reference_line_info.set_trajectory_type(ADCTrajectory::SPEED_FALLBACK);
     } else {
@@ -119,6 +120,39 @@ bool Stage::ExecuteTaskOnReferenceLine(
     reference_line_info.SetDrivable(true);
     return true;
   }
+  return true;
+}
+
+bool Stage::ExecuteTaskOnReferenceLineForOnlineLearning(
+    const common::TrajectoryPoint& planning_start_point, Frame* frame) {
+  // online learning mode
+  for (auto& reference_line_info : *frame->mutable_reference_line_info()) {
+    reference_line_info.SetDrivable(false);
+  }
+
+  // FIXME(all): current only pick up the first reference line to use
+  // learning model trajectory
+  auto& picked_reference_line_info =
+      frame->mutable_reference_line_info()->front();
+  for (auto* task : task_list_) {
+    const auto ret = task->Execute(frame, &picked_reference_line_info);
+    if (!ret.ok()) {
+      AERROR << "Failed to run tasks[" << task->Name()
+             << "], Error message: " << ret.error_message();
+      break;
+    }
+  }
+
+  const std::vector<common::TrajectoryPoint>& adc_future_trajectory_points =
+      picked_reference_line_info.trajectory();
+  DiscretizedTrajectory trajectory;
+  if (picked_reference_line_info.AdjustTrajectoryWhichStartsFromCurrentPos(
+      planning_start_point, adc_future_trajectory_points, &trajectory)) {
+    picked_reference_line_info.SetTrajectory(trajectory);
+    picked_reference_line_info.SetDrivable(true);
+    picked_reference_line_info.SetCost(0);
+  }
+
   return true;
 }
 
