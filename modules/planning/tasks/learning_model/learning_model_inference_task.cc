@@ -25,7 +25,7 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
-#include "modules/planning/learning_based/model_inference/trajectory_imitation_inference.h"
+#include "modules/planning/learning_based/model_inference/trajectory_imitation_libtorch_inference.h"
 #include "modules/planning/proto/learning_data.pb.h"
 #include "modules/planning/proto/planning_config.pb.h"
 
@@ -39,6 +39,9 @@ using apollo::common::TrajectoryPoint;
 LearningModelInferenceTask::LearningModelInferenceTask(const TaskConfig& config)
     : Task(config) {
   ACHECK(config.has_learning_model_inference_task_config());
+  trajectory_imitation_inference_ =
+      std::make_unique<TrajectoryImitationLibtorchInference>(
+          config.learning_model_inference_task_config());
 }
 
 Status LearningModelInferenceTask::Execute(
@@ -86,32 +89,35 @@ Status LearningModelInferenceTask::Process(Frame* frame) {
   TrajectoryEvaluator trajectory_evaluator;
 
   // evaluate adc trajectory
-  trajectory_evaluator.EvaluateADCTrajectory(
-      start_point_timestamp_sec,
-      config.trajectory_delta_t(),
-      &learning_data_frame);
+  trajectory_evaluator.EvaluateADCTrajectory(start_point_timestamp_sec,
+                                             config.trajectory_delta_t(),
+                                             &learning_data_frame);
 
   // for (const auto& t : learning_data_frame.adc_trajectory_point()) {
   //   AERROR << "AFTER: " << t.timestamp_sec();
   // }
 
   // evaluate obstacle trajectory
-  trajectory_evaluator.EvaluateObstacleTrajectory(
-      start_point_timestamp_sec,
-      config.trajectory_delta_t(),
-      &learning_data_frame);
+  trajectory_evaluator.EvaluateObstacleTrajectory(start_point_timestamp_sec,
+                                                  config.trajectory_delta_t(),
+                                                  &learning_data_frame);
 
   // evaluate obstacle prediction trajectory
   trajectory_evaluator.EvaluateObstaclePredictionTrajectory(
-      start_point_timestamp_sec,
-      config.trajectory_delta_t(),
+      start_point_timestamp_sec, config.trajectory_delta_t(),
       &learning_data_frame);
 
-  TrajectoryConvRnnInference trajectory_conv_rnn_inference(config);
-  if (!trajectory_conv_rnn_inference.Inference(&learning_data_frame)) {
-    const std::string msg =
-        absl::StrCat("TrajectoryConvRnnInference Inference failed. frame_num[",
-                     learning_data_frame.frame_num(), "]");
+  if (!trajectory_imitation_inference_->LoadModel()) {
+    const std::string msg = absl::StrCat(
+        "TrajectoryImitationInference LoadModel() failed. frame_num[",
+        learning_data_frame.frame_num(), "]");
+    AERROR << msg;
+    return Status(ErrorCode::PLANNING_ERROR, msg);
+  }
+  if (!trajectory_imitation_inference_->DoInference(&learning_data_frame)) {
+    const std::string msg = absl::StrCat(
+        "TrajectoryImitationLibtorchInference Inference failed. frame_num[",
+        learning_data_frame.frame_num(), "]");
     AERROR << msg;
     return Status(ErrorCode::PLANNING_ERROR, msg);
   }
@@ -139,7 +145,7 @@ Status LearningModelInferenceTask::Process(Frame* frame) {
   constexpr double kADCFutureTrajectoryDeltaTime = 0.02;
   std::vector<TrajectoryPointFeature> future_trajectory;
   for (const auto& tp :
-      learning_data_frame.output().adc_future_trajectory_point()) {
+       learning_data_frame.output().adc_future_trajectory_point()) {
     future_trajectory.push_back(tp);
   }
 
@@ -157,10 +163,8 @@ Status LearningModelInferenceTask::Process(Frame* frame) {
 
   std::vector<TrajectoryPointFeature> evaluated_future_trajectory;
   trajectory_evaluator.EvaluateADCFutureTrajectory(
-      learning_data_frame.frame_num(),
-      future_trajectory,
-      start_point_timestamp_sec,
-      kADCFutureTrajectoryDeltaTime,
+      learning_data_frame.frame_num(), future_trajectory,
+      start_point_timestamp_sec, kADCFutureTrajectoryDeltaTime,
       &evaluated_future_trajectory);
 
   // convert to common::TrajectoryPoint
