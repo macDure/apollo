@@ -35,6 +35,10 @@ DEFINE_string(scenario_lane_follow_config_file,
               "/apollo/modules/planning/conf/"
               "scenario/lane_follow_config.pb.txt",
               "The lane_follow scenario configuration file");
+DEFINE_string(scenario_lane_follow_hybrid_config_file,
+              "/apollo/modules/planning/conf/"
+              "scenario/lane_follow_hybrid_config.pb.txt",
+              "The lane_follow scenario configuration file for HYBRID");
 DEFINE_string(scenario_learning_model_sample_config_file,
               "/apollo/modules/planning/conf/"
               "scenario/learning_model_sample_config.pb.txt",
@@ -550,3 +554,10 @@ DEFINE_string(
     planning_birdview_img_feature_renderer_config_file,
     "/apollo/modules/planning/conf/planning_semantic_map_config.pb.txt",
     "config file for renderer singleton");
+
+DEFINE_bool(
+    skip_path_reference_in_side_pass, false,
+    "skipping using learning model output as path reference in side pass");
+DEFINE_bool(
+    skip_path_reference_in_change_lane, true,
+    "skipping using learning model output as path reference in change lane");

@@ -21,8 +21,11 @@
 #include <limits>
 
 #include "modules/prediction/common/junction_analyzer.h"
+#include "modules/prediction/common/prediction_constants.h"
+#include "modules/prediction/common/prediction_system_gflags.h"
 #include "modules/prediction/container/obstacles/obstacle_clusters.h"
 #include "modules/prediction/network/rnn_model/rnn_model.h"
+#include "modules/common/util/util.h"
 
 namespace apollo {
 namespace prediction {
@@ -48,13 +51,17 @@ bool IsClosed(const double x0, const double y0, const double theta0,
 
 }  // namespace
 
-PerceptionObstacle::Type Obstacle::type() const { return type_; }
+PerceptionObstacle::Type Obstacle::type() const {
+  return type_;
+}
 
 bool Obstacle::IsPedestrian() const {
   return type_ == PerceptionObstacle::PEDESTRIAN;
 }
 
-int Obstacle::id() const { return id_; }
+int Obstacle::id() const {
+  return id_;
+}
 
 double Obstacle::timestamp() const {
   ACHECK(!feature_history_.empty());
@@ -87,7 +94,9 @@ Feature* Obstacle::mutable_latest_feature() {
   return &(feature_history_.front());
 }
 
-size_t Obstacle::history_size() const { return feature_history_.size(); }
+size_t Obstacle::history_size() const {
+  return feature_history_.size();
+}
 
 bool Obstacle::IsStill() {
   if (feature_history_.size() > 0) {
@@ -164,6 +173,11 @@ bool Obstacle::Insert(const PerceptionObstacle& perception_obstacle,
   if (type_ != PerceptionObstacle::PEDESTRIAN) {
     SetCurrentLanes(&feature);
     SetNearbyLanes(&feature);
+  }
+
+  if (FLAGS_prediction_offline_mode ==
+      PredictionConstants::kDumpDataForLearning) {
+    SetSurroundingLaneIds(&feature, FLAGS_surrounding_lane_search_radius);
   }
 
   if (FLAGS_adjust_vehicle_heading_by_lane &&
@@ -756,6 +770,21 @@ void Obstacle::SetNearbyLanes(Feature* feature) {
     lane_feature->set_lane_type(nearby_lane->lane().type());
     ADEBUG << "Obstacle [" << id_ << "] has nearby lanes ["
            << lane_feature->ShortDebugString() << "]";
+  }
+}
+
+void Obstacle::SetSurroundingLaneIds(Feature* feature, const double radius) {
+  Eigen::Vector2d point(feature->position().x(), feature->position().y());
+  std::vector<std::string> lane_ids =
+      PredictionMap::NearbyLaneIds(point, radius);
+  for (const auto& lane_id : lane_ids) {
+    feature->add_surrounding_lane_id(lane_id);
+    std::shared_ptr<const LaneInfo> lane_info =
+        PredictionMap::LaneById(lane_id);
+    if (lane_info->IsOnLane({feature->position().x(),
+                             feature->position().y()})) {
+      feature->add_within_lane_id(lane_id);
+    }
   }
 }
 
@@ -1382,6 +1411,8 @@ void Obstacle::InsertFeatureToHistory(const Feature& feature) {
 std::unique_ptr<Obstacle> Obstacle::Create(
     const PerceptionObstacle& perception_obstacle, const double timestamp,
     const int prediction_id) {
+  static std::mutex mutex_createobstacle;
+  UNIQUE_LOCK_MULTITHREAD(mutex_createobstacle);
   std::unique_ptr<Obstacle> ptr_obstacle(new Obstacle());
   if (!ptr_obstacle->Insert(perception_obstacle, timestamp, prediction_id)) {
     return nullptr;

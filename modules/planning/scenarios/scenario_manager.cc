@@ -132,8 +132,14 @@ std::unique_ptr<Scenario> ScenarioManager::CreateScenario(
 
 void ScenarioManager::RegisterScenarios() {
   // lane_follow
-  ACHECK(Scenario::LoadConfig(FLAGS_scenario_lane_follow_config_file,
-                              &config_map_[ScenarioConfig::LANE_FOLLOW]));
+  if (FLAGS_planning_learning_mode == 3) {
+    // HYBRID
+    ACHECK(Scenario::LoadConfig(FLAGS_scenario_lane_follow_hybrid_config_file,
+                                &config_map_[ScenarioConfig::LANE_FOLLOW]));
+  } else {
+    ACHECK(Scenario::LoadConfig(FLAGS_scenario_lane_follow_config_file,
+                                &config_map_[ScenarioConfig::LANE_FOLLOW]));
+  }
 
   // bare_intersection
   ACHECK(Scenario::LoadConfig(
@@ -727,7 +733,7 @@ ScenarioConfig::ScenarioType ScenarioManager::SelectParkAndGoScenario(
   bool park_and_go = false;
   const auto& scenario_config =
       config_map_[ScenarioConfig::PARK_AND_GO].park_and_go_config();
-  const auto vehicle_state_provider = common::VehicleStateProvider::Instance();
+  const auto vehicle_state_provider = injector_->vehicle_state();
   common::VehicleState vehicle_state = vehicle_state_provider->vehicle_state();
   auto adc_point = common::util::PointFactory::ToPointENU(vehicle_state);
   // TODO(SHU) might consider gear == GEAR_PARKING
