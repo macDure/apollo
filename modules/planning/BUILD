@@ -27,8 +27,9 @@ cc_library(
     ],
 )
 
-cc_library(
+cc_binary(
     name = "libplanning_component.so",
+    linkshared = True,
     linkstatic = False,
     deps = [":planning_component_lib"],
 )

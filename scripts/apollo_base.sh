@@ -47,10 +47,8 @@ function set_lib_path() {
     export LD_LIBRARY_PATH=/usr/local/libtorch_gpu/lib:$LD_LIBRARY_PATH
   fi
 
-  local PY_LIB_PATH="${APOLLO_ROOT_DIR}/py_proto"
-  local PY_TOOLS_PATH="${APOLLO_ROOT_DIR}/modules/tools"
-  export PYTHONPATH=${PY_LIB_PATH}:${PY_TOOLS_PATH}:${PYTHONPATH}
-
+  # FIXME(all): remove PYTHONPATH settings
+  export PYTHONPATH="${APOLLO_ROOT_DIR}/modules/tools:${PYTHONPATH}"
   # Set teleop paths
   export PYTHONPATH="${APOLLO_ROOT_DIR}/modules/teleop/common:${PYTHONPATH}"
   add_to_path "/apollo/modules/teleop/common/scripts"
@@ -380,7 +378,7 @@ function record_bag_env_log() {
 }
 
 # run command_name module_name
-function run() {
+function run_module() {
   local module=$1
   shift
   run_customized_path $module $module "$@"
