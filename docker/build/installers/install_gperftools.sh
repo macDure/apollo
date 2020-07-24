@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# Copyright 2019 The Apollo Authors. All Rights Reserved.
+# Copyright 2020 The Apollo Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,19 +20,32 @@
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
+. /tmp/installers/installer_base.sh
 
-# Prepare
-PACKAGE="2.0.0.tar.gz"
-OPUSLIB="opuslib-2.0.0"
-wget https://github.com/OnBeep/opuslib/archive/${PACKAGE}
-tar zxf ${PACKAGE}
+apt-get -y update && \
+    apt-get -y install \
+    libunwind-dev \
+    graphviz
 
-# Build and install.
-pushd ${OPUSLIB}
-  make
-  make install
-popd
+VERSION="2.8"
+PKG_NAME="gperftools-${VERSION}.tar.gz"
+CHECKSUM="b09193adedcc679df2387042324d0d54b93d35d062ea9bff0340f342a709e860"
+DOWNLOAD_LINK="https://github.com/gperftools/gperftools/archive/${PKG_NAME}"
 
-# Clean
-rm -fr ${PACKAGE} ${OPUSLIB}
+download_if_not_cached "${PKG_NAME}" "${CHECKSUM}" "${DOWNLOAD_LINK}"
 
+tar xzf ${PKG_NAME}
+
+pushd "gperftools-gperftools-${VERSION}" >/dev/null
+    ./autogen.sh
+    ./configure --prefix=/usr
+    make -j$(nproc)
+    make install
+popd >/dev/null
+
+ldconfig
+
+ok "Successfully installed gperftools-${VERSION}."
+
+# clean up
+rm -rf ${PKG_NAME} "gperftools-gperftools-${VERSION}"

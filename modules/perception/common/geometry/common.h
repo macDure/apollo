@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "Eigen/Core"
+#include "modules/common/util/eigen_defs.h"
 #include "modules/perception/base/box.h"
 #include "modules/perception/base/point_cloud.h"
 
@@ -120,7 +121,7 @@ void CalculateBBoxSizeCenter2DXY(const PointCloudT &cloud,
   Eigen::Vector3d min_pt(DBL_MAX, DBL_MAX, DBL_MAX);
   Eigen::Vector3d max_pt(-DBL_MAX, -DBL_MAX, -DBL_MAX);
   Eigen::Vector3d loc_pt(0.0, 0.0, 0.0);
-  for (int i = 0; i < cloud.size(); i++) {
+  for (size_t i = 0; i < cloud.size(); i++) {
     loc_pt = projection * Eigen::Vector3d(cloud[i].x, cloud[i].y, cloud[i].z);
 
     min_pt(0) = std::min(min_pt(0), loc_pt(0));
@@ -310,12 +311,8 @@ void CalculateDistAndDirToBoundary(
 template <typename PointT>
 void CalculateDistAndDirToBoundary(
     const Eigen::Matrix<typename PointT::Type, 3, 1> &pt,
-    const std::vector<base::PointCloud<PointT>,
-                      Eigen::aligned_allocator<base::PointCloud<PointT>>>
-        &left_boundary,
-    const std::vector<base::PointCloud<PointT>,
-                      Eigen::aligned_allocator<base::PointCloud<PointT>>>
-        &right_boundary,
+    const apollo::common::EigenVector<base::PointCloud<PointT>> &left_boundary,
+    const apollo::common::EigenVector<base::PointCloud<PointT>> &right_boundary,
     typename PointT::Type *dist,
     Eigen::Matrix<typename PointT::Type, 3, 1> *dir) {
   using Type = typename PointT::Type;

@@ -20,6 +20,9 @@ pyproj
 shapely
 matplotlib
 
+# Driver
+pyusb
+
 # Data format
 h5py
 utm
