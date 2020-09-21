@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import subprocess
 
 TAB = " " * 4
 
@@ -165,10 +166,9 @@ def _path_check(build_file_path):
 
 ##================ REGEX FOR GRPC CHECK ====================================##
 PATT_SERVICE = re.compile("^service\s+\S+\s+{$")
-PATT_RPC_RET = re.compile("^rpc\s+\S+(\S+)\s+returns")
-PATT_RPC_ONLY = re.compile("^rpc\s+\S+(\S+)")
-PATT_RET_ONLY = re.compile("^returns\s+(\S+)\s+{")
-
+PATT_RPC_RET = re.compile("^rpc\s+\S+\(\S+\)\s+returns")
+PATT_RPC_ONLY = re.compile("^rpc\s+\S+\(\S+\)")
+PATT_RET_ONLY = re.compile("^returns\s+\(\S+\)\s+{")
 
 ##===============  GRPC CHECK ==============================================##
 def grpc_check(fpath):
@@ -209,6 +209,13 @@ def grpc_check(fpath):
         return grpc_found
 
 
+##================== FORMAT GENERATED FILE =================================##
+def run_buildifier(build_file_path):
+    script_path = "/apollo/scripts/buildifier.sh"
+    if os.path.exists(script_path):
+        subprocess.call(["bash", script_path, build_file_path])
+
+
 ##================== MAIN FUNCTION =========================================##
 def main(build_file_path):
     if not _path_check(build_file_path):
@@ -245,6 +252,8 @@ def main(build_file_path):
     fout.close()
     print("Congratulations, {} was successfully generated.".format(
         build_file_path))
+
+    run_buildifier(build_file_path)
 
 
 ##=========== BAZEL BUILD RULE FOR A SINGLE PROTO FILE =====================##

@@ -53,6 +53,8 @@ class OfflineLocalVisualizer {
 
   void Visualize();
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   bool PCDTimestampFileHandler();
   bool LidarLocFileHandler(const std::vector<double> &pcd_timestamps);

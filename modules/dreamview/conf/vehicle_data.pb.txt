@@ -43,6 +43,10 @@ data_files {
   dest_path: "/apollo/modules/perception/data/params"
 }
 data_files {
+  source_path: "microphone_params"
+  dest_path: "/apollo/modules/audio/conf/respeaker_extrinsics.yaml"
+}
+data_files {
   source_path: "gnss_params/ant_imu_leverarm.yaml"
   dest_path: "/apollo/modules/localization/msf/params/gnss_params/ant_imu_leverarm.yaml"
 }
@@ -133,4 +137,24 @@ data_files {
 data_files {
   source_path: "perception_launch"
   dest_path: "/apollo/modules/perception/production/launch"
+}
+data_files {
+  source_path: "lidar_dag"
+  dest_path: "/apollo/modules/drivers/lidar/dag"
+}
+data_files {
+  source_path: "lidar_conf"
+  dest_path: "/apollo/modules/drivers/lidar/conf"
+}
+data_files {
+  source_path: "lidar_params"
+  dest_path: "/apollo/modules/drivers/velodyne/params"
+}
+data_files {
+  source_path: "lidar_params"
+  dest_path: "/apollo/modules/localization/msf/params/velodyne_params"
+}
+data_files {
+  source_path: "lidar_params"
+  dest_path: "/apollo/modules/perception/data/params"
 }

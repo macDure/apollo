@@ -31,6 +31,7 @@ cc_binary(
 cc_library(
     name = "binary",
     hdrs = ["binary.h"],
+    srcs = ["binary.cc"],
 )
 
 cc_library(
@@ -47,6 +48,7 @@ cc_library(
     srcs = ["init.cc"],
     hdrs = ["init.h"],
     deps = [
+        "//cyber:binary",
         "//cyber:state",
         "//cyber/common:file",
         "//cyber/logger:async_logger",
@@ -97,6 +99,7 @@ cc_library(
         "//cyber/sysmo",
         "//cyber/task",
         "//cyber/time",
+        "//cyber/time:clock",
         "//cyber/time:duration",
         "//cyber/time:rate",
         "//cyber/timer",
@@ -108,6 +111,13 @@ cc_library(
         "@fastrtps",
         "@uuid",
     ],
+)
+
+filegroup(
+    name = "cyber_conf",
+    srcs = glob([
+        "conf/*.conf",
+    ]),
 )
 
 cpplint()

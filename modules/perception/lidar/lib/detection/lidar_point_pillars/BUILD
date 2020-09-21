@@ -25,7 +25,9 @@ cc_library(
         ":postprocess_cuda",
         ":preprocess_points",
         ":scatter_cuda",
+        "//cyber/common",
         "//modules/perception/common:perception_gflags",
+        "//third_party:libtorch",
         "@local_config_cuda//cuda:cudart",
         "@local_config_tensorrt//:tensorrt",
     ],
@@ -47,7 +49,7 @@ cc_library(
         "//modules/perception/lib/thread",
         "//modules/perception/lidar/common",
         "@eigen",
-        "@pcl",
+        "@local_config_pcl//:pcl",
     ],
     alwayslink = True,
 )
@@ -124,7 +126,7 @@ cuda_library(
 
 cc_test(
     name = "point_pillars_test",
-    size = "small",
+    size = "large",
     srcs = ["point_pillars_test.cc"],
     deps = [
         ":point_pillars",
@@ -133,7 +135,7 @@ cc_test(
         "@boost",
         "@com_google_googletest//:gtest_main",
         "@eigen",
-        "@pcl",
+        "@local_config_pcl//:pcl",
     ],
 )
 

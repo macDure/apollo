@@ -2,6 +2,48 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
+PERCEPTION_COPTS = [ '-DMODULE_NAME=\\"perception\\"' ]
+
+cc_binary(
+    name = "libperception_component_camera.so",
+    linkshared = True,
+    linkstatic = False,
+    deps = [":perception_component_inner_camera"],
+)
+
+cc_library(
+    name = "perception_component_inner_camera",
+    srcs = [
+        "trafficlights_perception_component.cc",
+    ],
+    hdrs = [
+        "trafficlights_perception_component.h",
+    ],
+    copts = PERCEPTION_COPTS,
+    deps = [
+        "//cyber",
+        "//modules/common/math",
+        "//modules/common/util:time_util",
+        "//modules/drivers/proto:sensor_image_cc_proto",
+        "//modules/map/proto:map_cc_proto",
+        "//modules/perception/base",
+        "//modules/perception/camera/app:traffic_light_camera_perception",
+        "//modules/perception/camera/common",
+        "//modules/perception/camera/lib/traffic_light/preprocessor:tl_preprocessor",
+        "//modules/perception/common/sensor_manager",
+        "//modules/perception/map/hdmap:hdmap_input",
+        "//modules/perception/onboard/common_flags",
+        "//modules/perception/onboard/proto:trafficlights_perception_component_cc_proto",
+        "//modules/perception/onboard/transform_wrapper",
+        "//modules/perception/proto:traffic_light_detection_cc_proto",
+        "//modules/transform/proto:transform_cc_proto",
+        "//modules/v2x/common:v2x_proxy_gflags",
+        "//modules/v2x/proto:v2x_traffic_light_cc_proto",
+        "@eigen",
+        "@opencv//:highgui",
+    ],
+    alwayslink = True,
+)
 
 cc_binary(
     name = "libperception_component_lidar.so",
@@ -16,10 +58,10 @@ cc_library(
         '-DMODULE_NAME=\\"perception\\"',
     ],
     deps = [
-        ":perception_component_inner_detection",
-        ":perception_component_inner_fusion",
-        ":perception_component_inner_radar",
-        ":perception_component_inner_recognition",
+        ":detection_component",
+        ":fusion_component",
+        ":radar_detection_component",
+        ":recognition_component",
     ],
     alwayslink = True,
 )
@@ -37,20 +79,15 @@ cc_library(
 )
 
 cc_library(
-    name = "perception_component_inner_detection",
-    srcs = [
-        "detection_component.cc",
-    ],
-    hdrs = [
-        "detection_component.h",
-    ],
+    name = "detection_component",
+    srcs = ["detection_component.cc"],
+    hdrs = ["detection_component.h"],
     deps = [
         ":lidar_inner_component_messages",
-        "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
+        "//modules/common/util:string_util",
         "//modules/perception/common/sensor_manager",
         "//modules/perception/lib/registerer",
-        "//modules/perception/lib/utils",
         "//modules/perception/lidar/app:lidar_obstacle_detection",
         "//modules/perception/lidar/common",
         "//modules/perception/onboard/common_flags",
@@ -61,23 +98,18 @@ cc_library(
 )
 
 cc_library(
-    name = "perception_component_inner_fusion",
-    srcs = [
-        "fusion_component.cc",
-    ],
-    hdrs = [
-        "fusion_component.h",
-    ],
+    name = "fusion_component",
+    srcs = ["fusion_component.cc"],
+    hdrs = ["fusion_component.h"],
     deps = [
-        "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
+        "//modules/common/util:perf_util",
         "//modules/perception/base",
         "//modules/perception/fusion/app:obstacle_multi_sensor_fusion",
         "//modules/perception/fusion/lib/dummy:dummy_algorithms",
         "//modules/perception/fusion/lib/fusion_system/probabilistic_fusion",
         "//modules/perception/fusion/lib/interface",
         "//modules/perception/lib/registerer",
-        "//modules/perception/lib/utils",
         "//modules/perception/lidar/lib/classifier/fused_classifier",
         "//modules/perception/lidar/lib/classifier/fused_classifier:ccrf_type_fusion",
         "//modules/perception/map/hdmap:hdmap_input",
@@ -90,20 +122,19 @@ cc_library(
 )
 
 cc_library(
-    name = "perception_component_inner_radar",
+    name = "radar_detection_component",
     srcs = [
         "radar_detection_component.cc",
     ],
     hdrs = [
-        "radar_detection_component.h"
+        "radar_detection_component.h",
     ],
     deps = [
-        "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
+        "//modules/common/util:perf_util",
         "//modules/perception/base",
         "//modules/perception/common/sensor_manager",
         "//modules/perception/lib/registerer",
-        "//modules/perception/lib/utils",
         "//modules/perception/map/hdmap:hdmap_input",
         "//modules/perception/onboard/common_flags",
         "//modules/perception/onboard/inner_component_messages",
@@ -132,7 +163,7 @@ cc_library(
 )
 
 cc_library(
-    name = "perception_component_inner_recognition",
+    name = "recognition_component",
     srcs = [
         "recognition_component.cc",
     ],
@@ -141,12 +172,11 @@ cc_library(
     ],
     deps = [
         ":lidar_inner_component_messages",
-        "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
+        "//modules/common/util:perf_util",
         "//modules/perception/base",
         "//modules/perception/common/sensor_manager",
         "//modules/perception/lib/registerer",
-        "//modules/perception/lib/utils",
         "//modules/perception/lidar/app:lidar_obstacle_tracking",
         "//modules/perception/lidar/common",
         "//modules/perception/lidar/lib/interface",

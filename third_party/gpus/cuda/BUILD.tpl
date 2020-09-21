@@ -72,6 +72,42 @@ cuda_header_library(
     includes = ["cublas/include"],
 )
 
+cuda_header_library(
+    name = "cusolver_headers",
+    hdrs = [":cusolver-include"],
+    include_prefix = "third_party/gpus/cuda/include",
+    strip_include_prefix = "cusolver/include",
+    deps = [":cuda_headers"],
+    includes = ["cusolver/include"],
+)
+
+cuda_header_library(
+    name = "cufft_headers",
+    hdrs = [":cufft-include"],
+    include_prefix = "third_party/gpus/cuda/include",
+    strip_include_prefix = "cufft/include",
+    deps = [":cuda_headers"],
+    includes = ["cufft/include"],
+)
+
+cuda_header_library(
+    name = "cusparse_headers",
+    hdrs = [":cusparse-include"],
+    include_prefix = "third_party/gpus/cuda/include",
+    strip_include_prefix = "cusparse/include",
+    deps = [":cuda_headers"],
+    includes = ["cusparse/include"],
+)
+
+cuda_header_library(
+    name = "curand_headers",
+    hdrs = [":curand-include"],
+    include_prefix = "third_party/gpus/cuda/include",
+    strip_include_prefix = "curand/include",
+    deps = [":cuda_headers"],
+    includes = ["curand/include"],
+)
+
 cc_library(
     name = "cublas",
     srcs = ["cuda/lib/%{cublas_lib}"],
@@ -116,30 +152,6 @@ cc_library(
     linkstatic = 1,
 )
 
-cuda_header_library(
-    name = "nccl_headers",
-    hdrs = [":nccl-include"],
-    include_prefix="third_party/gpus",
-    includes = ["cuda/include/"],
-    deps = [":cuda_headers"],
-)
-
-cc_library(
-    name = "nccl_lib",
-    srcs = ["cuda/lib/%{nccl_lib}"],
-    data = ["cuda/lib/%{nccl_lib}"],
-    linkstatic = 1,
-)
-
-cc_library(
-    name = "nccl",
-    deps = [
-        ":nccl_headers",
-        ":nccl_lib",
-        ":cuda",
-    ]
-)
-
 cc_library(
     name = "cuda",
     deps = [
@@ -150,6 +162,11 @@ cc_library(
         ":cufft",
         ":curand",
     ],
+)
+
+alias(
+    name = "cub_headers",
+    actual = "%{cub_actual}"
 )
 
 cuda_header_library(
@@ -194,4 +211,10 @@ bzl_library(
     ],
 )
 
+py_library(
+    name = "cuda_config_py",
+    srcs = ["cuda/cuda_config.py"]
+)
+
 %{copy_rules}
+

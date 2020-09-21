@@ -2,18 +2,19 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
+CONTROL_COPTS = ['-DMODULE_NAME=\\"control\\"']
 
 cc_library(
     name = "control_lib",
     srcs = [],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         "//cyber",
+        "//cyber/time:clock",
         "//modules/canbus/proto:chassis_cc_proto",
         "//modules/common/adapters:adapter_gflags",
         "//modules/common/latency_recorder",
         "//modules/common/monitor_log",
-        "//modules/common/time",
         "//modules/common/util",
         "//modules/control/common",
         "//modules/control/controller",
@@ -35,7 +36,7 @@ cc_library(
     name = "control_component_lib",
     srcs = ["control_component.cc"],
     hdrs = ["control_component.h"],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         ":control_lib",
         "//modules/control/common:dependency_injector",

@@ -12,7 +12,6 @@ cc_library(
         "//cyber/common:log",
         "//modules/common/proto:pnc_point_cc_proto",
         "//modules/common/status",
-        "//modules/common/time",
         "//modules/common/util",
         "//modules/common/util:factory",
         "//modules/common/vehicle_state:vehicle_state_provider",
@@ -40,6 +39,7 @@ cc_test(
     name = "public_road_planner_test",
     size = "small",
     srcs = ["public_road_planner_test.cc"],
+    linkopts = ["-lgomp"],
     deps = [
         ":public_road_planner",
         "@com_google_googletest//:gtest_main",

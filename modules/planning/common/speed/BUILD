@@ -2,6 +2,7 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
+PLANNING_COPTS = ["-DMODULE_NAME=\\\"planning\\\""]
 
 cc_library(
     name = "st_point",
@@ -17,9 +18,7 @@ cc_library(
     name = "st_boundary",
     srcs = ["st_boundary.cc"],
     hdrs = ["st_boundary.h"],
-    copts = [
-        "-DMODULE_NAME=\\\"planning\\\"",
-    ],
+    copts = PLANNING_COPTS,
     deps = [
         ":st_point",
         "//cyber/common:log",
@@ -33,14 +32,10 @@ cc_test(
     name = "st_boundary_test",
     size = "small",
     srcs = ["st_boundary_test.cc"],
-    copts = [
-        "-DMODULE_NAME=\\\"planning\\\"",
-    ],
+    copts = PLANNING_COPTS,
     deps = [
         ":st_boundary",
         "//cyber/common:log",
-        "//modules/common/time",
-        "//modules/common/util",
         "@com_google_googletest//:gtest_main",
     ],
 )

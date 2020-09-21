@@ -60,12 +60,28 @@ cc_test(
 cc_library(
     name = "environment",
     hdrs = ["environment.h"],
+    deps = [
+        "//cyber/common:log",
+    ],
+)
+
+cc_test(
+    name = "environment_test",
+    size = "small",
+    srcs = ["environment_test.cc"],
+    deps = [
+        ":environment",
+        "@com_google_googletest//:gtest_main",
+    ],
 )
 
 cc_library(
     name = "global_data",
     srcs = ["global_data.cc"],
     hdrs = ["global_data.h"],
+    data = [
+        "//cyber:cyber_conf",
+    ],
     deps = [
         "//cyber/base:atomic_hash_map",
         "//cyber/base:atomic_rw_lock",

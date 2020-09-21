@@ -19,28 +19,24 @@
 # Fail on first error.
 set -e
 
-INSTALL_MODE="$1"; shift
+CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. ${CURR_DIR}/installer_base.sh
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
-
-. /tmp/installers/installer_base.sh
-
-apt-get -y update && \
-    apt-get -y install \
+apt_get_update_and_install \
     libopenblas-dev \
     libatlas-base-dev \
+    liblapack-dev
+
+# TODO(storypku): GPU Build only
+apt_get_update_and_install \
     libcublas10 \
     libcublas-dev
 
-
 info "Install TensorRT 7 ..."
-bash /tmp/installers/install_tensorrt.sh
-
-#info "Install Caffe 1.0 ..."
-#bash /tmp/installers/install_gpu_caffe.sh ${INSTALL_MODE}
+bash ${CURR_DIR}/install_tensorrt.sh
 
 info "Install libtorch ..."
-bash /tmp/installers/install_libtorch.sh
+bash ${CURR_DIR}/install_libtorch.sh
 
 # openmpi @cuda
 # pcl @cuda

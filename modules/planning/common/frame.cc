@@ -22,10 +22,11 @@
 #include <algorithm>
 #include <limits>
 
+#include "absl/strings/str_cat.h"
 #include "cyber/common/log.h"
+#include "cyber/time/clock.h"
 #include "modules/common/configs/vehicle_config_helper.h"
 #include "modules/common/math/vec2d.h"
-#include "modules/common/time/time.h"
 #include "modules/common/util/point_factory.h"
 #include "modules/common/vehicle_state/vehicle_state_provider.h"
 #include "modules/map/hdmap/hdmap_util.h"
@@ -45,7 +46,7 @@ using apollo::common::ErrorCode;
 using apollo::common::Status;
 using apollo::common::math::Box2d;
 using apollo::common::math::Polygon2d;
-using apollo::common::time::Clock;
+using apollo::cyber::Clock;
 using apollo::prediction::PredictionObstacles;
 
 DrivingAction Frame::pad_msg_driving_action_ = DrivingAction::NONE;
@@ -369,11 +370,11 @@ Status Frame::InitFrameData(
   if (planning_start_point_.v() < 1e-3) {
     const auto *collision_obstacle = FindCollisionObstacle(ego_info);
     if (collision_obstacle != nullptr) {
-      std::string err_str =
-          "Found collision with obstacle: " + collision_obstacle->Id();
-      AERROR << err_str;
-      monitor_logger_buffer_.ERROR(err_str);
-      return Status(ErrorCode::PLANNING_ERROR, err_str);
+      const std::string msg = absl::StrCat(
+          "Found collision with obstacle: ", collision_obstacle->Id());
+      AERROR << msg;
+      monitor_logger_buffer_.ERROR(msg);
+      return Status(ErrorCode::PLANNING_ERROR, msg);
     }
   }
 
@@ -403,12 +404,10 @@ const Obstacle *Frame::FindCollisionObstacle(const EgoInfo *ego_info) const {
   return nullptr;
 }
 
-uint32_t Frame::SequenceNum() const {
-  return sequence_num_;
-}
+uint32_t Frame::SequenceNum() const { return sequence_num_; }
 
 std::string Frame::DebugString() const {
-  return "Frame: " + std::to_string(sequence_num_);
+  return absl::StrCat("Frame: ", sequence_num_);
 }
 
 void Frame::RecordInputDebug(planning_internal::Debug *debug) {
@@ -467,9 +466,7 @@ void Frame::AlignPredictionTime(const double planning_start_time,
   }
 }
 
-Obstacle *Frame::Find(const std::string &id) {
-  return obstacles_.Find(id);
-}
+Obstacle *Frame::Find(const std::string &id) { return obstacles_.Find(id); }
 
 void Frame::AddObstacle(const Obstacle &obstacle) {
   obstacles_.Add(obstacle.Id(), obstacle);
@@ -482,8 +479,8 @@ void Frame::ReadTrafficLights() {
   if (traffic_light_detection == nullptr) {
     return;
   }
-  const double delay =
-      traffic_light_detection->header().timestamp_sec() - Clock::NowInSeconds();
+  const double delay = traffic_light_detection->header().timestamp_sec() -
+                       Clock::NowInSeconds();
   if (delay > FLAGS_signal_expire_time_sec) {
     ADEBUG << "traffic signals msg is expired, delay = " << delay
            << " seconds.";

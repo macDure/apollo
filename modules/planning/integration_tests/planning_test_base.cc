@@ -30,7 +30,7 @@ namespace apollo {
 namespace planning {
 
 using apollo::canbus::Chassis;
-using apollo::common::time::Clock;
+using apollo::cyber::Clock;
 using apollo::localization::LocalizationEstimate;
 using apollo::perception::TrafficLightDetection;
 using apollo::prediction::PredictionObstacles;
@@ -70,7 +70,6 @@ void PlanningTestBase::SetUpTestCase() {
   // and LatticePlanner can't pass the unit test.
   FLAGS_enable_trajectory_check = false;
   FLAGS_planning_test_mode = true;
-  FLAGS_use_osqp_optimizer_for_reference_line = false;
 }
 
 bool PlanningTestBase::FeedTestData() {
@@ -97,7 +96,7 @@ bool PlanningTestBase::FeedTestData() {
     AERROR << "failed to load file: " << FLAGS_test_localization_file;
     return false;
   }
-  Clock::SetMode(Clock::MOCK);
+  Clock::SetMode(apollo::cyber::proto::MODE_MOCK);
   Clock::SetNowInSeconds(localization.header().timestamp_sec());
 
   // prediction

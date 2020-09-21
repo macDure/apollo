@@ -2,12 +2,13 @@ load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
+CONTROL_COPTS = ['-DMODULE_NAME=\\"control\\"']
 
 cc_library(
     name = "controller_interface",
     srcs = [],
     hdrs = ["controller.h"],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         "//modules/control/common:dependency_injector",
     ],
@@ -17,10 +18,12 @@ cc_library(
     name = "lat_controller",
     srcs = ["lat_controller.cc"],
     hdrs = ["lat_controller.h"],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         ":controller_interface",
         "//cyber",
+        "//cyber/time:clock",
+        "//modules/common/configs:config_gflags",
         "//modules/common/configs:vehicle_config_helper",
         "//modules/common/filters:digital_filter",
         "//modules/common/filters:digital_filter_coefficients",
@@ -30,7 +33,6 @@ cc_library(
         "//modules/common/math:lqr",
         "//modules/common/math:mpc_osqp",
         "//modules/common/status",
-        "//modules/common/time",
         "//modules/control/common:control_gflags",
         "//modules/control/common:interpolation_1d",
         "//modules/control/common:leadlag_controller",
@@ -55,7 +57,7 @@ cc_library(
     name = "lon_controller",
     srcs = ["lon_controller.cc"],
     hdrs = ["lon_controller.h"],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         ":controller_interface",
         "//cyber",
@@ -63,7 +65,6 @@ cc_library(
         "//modules/common/filters:digital_filter",
         "//modules/common/filters:digital_filter_coefficients",
         "//modules/common/status",
-        "//modules/common/time",
         "//modules/control/common:control_gflags",
         "//modules/control/common:interpolation_2d",
         "//modules/control/common:leadlag_controller",
@@ -88,10 +89,11 @@ cc_library(
     name = "mpc_controller",
     srcs = ["mpc_controller.cc"],
     hdrs = ["mpc_controller.h"],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         ":controller_interface",
         "//cyber",
+        "//cyber/time:clock",
         "//modules/common/configs:vehicle_config_helper",
         "//modules/common/filters:digital_filter",
         "//modules/common/filters:digital_filter_coefficients",
@@ -102,7 +104,6 @@ cc_library(
         "//modules/common/math:mpc_osqp",
         "//modules/common/proto:geometry_cc_proto",
         "//modules/common/status",
-        "//modules/common/time",
         "//modules/control/common:control_gflags",
         "//modules/control/common:interpolation_1d",
         "//modules/control/common:interpolation_2d",
@@ -124,7 +125,7 @@ cc_library(
 
 cc_library(
     name = "controller",
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         ":controller_agent",
         ":controller_interface",
@@ -139,14 +140,14 @@ cc_library(
     name = "controller_agent",
     srcs = ["controller_agent.cc"],
     hdrs = ["controller_agent.h"],
-    copts = ['-DMODULE_NAME=\\"control\\"'],
+    copts = CONTROL_COPTS,
     deps = [
         ":controller_interface",
         ":lat_controller",
         ":lon_controller",
         ":mpc_controller",
         "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
         "//modules/common/util:factory",
         "//modules/control/common:dependency_injector",
         "//modules/control/proto:control_cmd_cc_proto",
@@ -164,7 +165,7 @@ cc_test(
     deps = [
         ":lon_controller",
         "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
         "//modules/common/util",
         "//modules/common/vehicle_state:vehicle_state_provider",
         "//modules/control/common:control_gflags",
@@ -183,7 +184,7 @@ cc_test(
     deps = [
         ":lat_controller",
         "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
         "//modules/common/util",
         "//modules/common/vehicle_state:vehicle_state_provider",
         "//modules/control/common:control_gflags",
@@ -201,7 +202,7 @@ cc_test(
     deps = [
         ":mpc_controller",
         "//cyber",
-        "//modules/common/time",
+        "//cyber/time:clock",
         "//modules/common/util",
         "//modules/common/vehicle_state:vehicle_state_provider",
         "//modules/control/common:control_gflags",

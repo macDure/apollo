@@ -172,6 +172,8 @@ class VisualizationEngine {
                  const ::apollo::common::EigenVector3dVec &cloud);
   void SetAutoPlay(bool auto_play);
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   void Preprocess(const std::string &map_folder,
                   const std::string &map_visual_folder);

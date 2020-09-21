@@ -56,11 +56,22 @@ cc_library(
     hdrs = ["clock.h"],
     deps = [
         ":time",
+        "//cyber/base:atomic_rw_lock",
         "//cyber/common:global_data",
         "//cyber/common:log",
         "//cyber/common:macros",
         "//cyber/common:util",
         "//cyber/proto:run_mode_conf_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "clock_test",
+    size = "small",
+    srcs = ["clock_test.cc"],
+    deps = [
+        ":clock",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 

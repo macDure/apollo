@@ -71,6 +71,8 @@ docs/demo_guide/*.record
 
 # bazel cache and others
 .cache/
-tools/python_bin_path.sh
 .apollo.bazelrc
 .errors.log
+
+# Flamegraph files
+tools/FlameGraph

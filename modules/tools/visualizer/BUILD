@@ -16,7 +16,6 @@ cc_binary(
     ],
     deps = [
         ":visualizer_lib",
-        "@console_bridge",
         "@fastrtps",
         "@qt//:qt_core",
         "@qt//:qt_gui",
@@ -31,12 +30,12 @@ qt_cc_library(
     srcs = glob(
         ["*.cc"],
     ),
-    copts = [
-        "-Iexternal/qt",
-    ],
     hdrs = glob([
         "*.h",
     ]),
+    copts = [
+        "-Iexternal/qt",
+    ],
     includes = [
         ".",
     ],

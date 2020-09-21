@@ -30,10 +30,10 @@ cc_test(
     size = "small",
     srcs = ["rtk_replay_planner_test.cc"],
     data = ["//modules/planning:planning_testdata"],
+    linkopts = ["-lgomp"],
     deps = [
         ":rtk_planner",
         "//cyber/common:log",
-        "//modules/common/time",
         "//modules/common/util",
         "@com_google_googletest//:gtest_main",
     ],

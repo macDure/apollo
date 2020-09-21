@@ -8,8 +8,9 @@ cc_library(
     srcs = ["transform_wrapper.cc"],
     hdrs = ["transform_wrapper.h"],
     deps = [
+        "//modules/common/util:string_util",
         "//modules/perception/common/sensor_manager",
-        "//modules/transform:tf2_buffer_lib",
+        "//modules/transform:buffer",
         "@com_github_gflags_gflags//:gflags",
         "@eigen",
     ],

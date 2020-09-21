@@ -23,6 +23,7 @@
 #include <queue>
 
 #include "absl/strings/str_cat.h"
+#include "cyber/time/clock.h"
 #include "modules/common/math/polygon2d.h"
 #include "modules/common/status/status.h"
 #include "modules/planning/common/planning_context.h"
@@ -38,7 +39,7 @@ using apollo::common::math::Box2d;
 using apollo::common::math::NormalizeAngle;
 using apollo::common::math::Polygon2d;
 using apollo::common::math::Vec2d;
-using apollo::common::time::Clock;
+using apollo::cyber::Clock;
 
 OpenSpaceTrajectoryPartition::OpenSpaceTrajectoryPartition(
     const TaskConfig& config,
@@ -232,7 +233,8 @@ Status OpenSpaceTrajectoryPartition::Process() {
       if (!UseFailSafeSearch(*partitioned_trajectories, trajectories_encodings,
                              &current_trajectory_index,
                              &current_trajectory_point_index)) {
-        std::string msg("Fail to find nearest trajectory point to follow");
+        const std::string msg =
+            "Fail to find nearest trajectory point to follow";
         AERROR << msg;
         return Status(ErrorCode::PLANNING_ERROR, msg);
       }
@@ -652,7 +654,8 @@ bool OpenSpaceTrajectoryPartition::InsertGearShiftTrajectory(
   if (flag_change_to_next || !current_gear_status->gear_shift_period_finished) {
     current_gear_status->gear_shift_period_finished = false;
     if (current_gear_status->gear_shift_period_started) {
-      current_gear_status->gear_shift_start_time = Clock::NowInSeconds();
+      current_gear_status->gear_shift_start_time =
+          Clock::Instance()->NowInSeconds();
       current_gear_status->gear_shift_position =
           partitioned_trajectories.at(current_trajectory_index).second;
       current_gear_status->gear_shift_period_started = false;
@@ -665,7 +668,8 @@ bool OpenSpaceTrajectoryPartition::InsertGearShiftTrajectory(
       GenerateGearShiftTrajectory(current_gear_status->gear_shift_position,
                                   gear_switch_idle_time_trajectory);
       current_gear_status->gear_shift_period_time =
-          Clock::NowInSeconds() - current_gear_status->gear_shift_start_time;
+          Clock::Instance()->NowInSeconds() -
+          current_gear_status->gear_shift_start_time;
       return true;
     }
   }

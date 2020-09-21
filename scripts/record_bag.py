@@ -45,6 +45,8 @@ import psutil
 
 
 SMALL_TOPICS = [
+    '/apollo/audio_detection',
+    '/apollo/audio_event',
     '/apollo/canbus/chassis',
     '/apollo/canbus/chassis_detail',
     '/apollo/common/latency_records',
@@ -109,12 +111,13 @@ LARGE_TOPICS = [
     '/apollo/sensor/lidar16/rear/right/PointCloud2',
     '/apollo/sensor/lidar16/fusion/PointCloud2',
     '/apollo/sensor/lidar16/fusion/compensator/PointCloud2',
-    '/apollo/sensor/velodyne64/compensator/PointCloud2',
     '/apollo/sensor/lidar128/PointCloud2',
     '/apollo/sensor/lidar128/compensator/PointCloud2',
     '/apollo/sensor/lidar16/Scan',
     '/apollo/sensor/lidar16/PointCloud2',
     '/apollo/sensor/lidar16/compensator/PointCloud2',
+    '/apollo/sensor/microphone',
+    '/apollo/sensor/velodyne64/compensator/PointCloud2',
 ]
 
 def shell_cmd(cmd, alert_on_failure=True):
@@ -242,7 +245,7 @@ class Recorder(object):
         cmd = '''
             cd "{}"
             source /apollo/scripts/apollo_base.sh
-            source /apollo/framework/install/setup.bash
+            source /apollo/cyber/setup.bash
             nohup cyber_recorder record -c {} >{} 2>&1 &
         '''.format(task_dir, topics_str, log_file)
         shell_cmd(cmd)
@@ -250,7 +253,7 @@ class Recorder(object):
     @staticmethod
     def is_running():
         """Test if the given process running."""
-        _, stdout, _ = shell_cmd('pgrep -c -f "cyber_recorder record"', False)
+        _, stdout, _ = shell_cmd('pgrep -f "cyber_recorder record" | grep -cv \'^1$\'', False)
         # If stdout is the pgrep command itself, no such process is running.
         return stdout.strip() != '1' if stdout else False
 

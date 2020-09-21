@@ -16,7 +16,7 @@
 
 #include "modules/perception/common/perception_gflags.h"
 
-#include <climits>
+#include <limits>
 
 namespace apollo {
 namespace perception {
@@ -39,10 +39,10 @@ DEFINE_string(work_root, "", "Project work root direcotry.");
 
 // lidar_point_pillars
 DEFINE_int32(gpu_id, 0, "The id of gpu used for inference.");
-DEFINE_string(pfe_onnx_file,
+DEFINE_string(pfe_torch_file,
               "/apollo/modules/perception/production/data/perception/lidar/"
-              "models/detection/point_pillars/pfe.onnx",
-              "The path of pillars feature extractor onnx file.");
+              "models/detection/point_pillars/pfe.pt",
+              "The path of pillars feature extractor torch file.");
 DEFINE_string(rpn_onnx_file,
               "/apollo/modules/perception/production/data/perception/lidar/"
               "models/detection/point_pillars/rpn.onnx",
@@ -52,6 +52,8 @@ DEFINE_double(normalizing_factor, 255,
 DEFINE_int32(num_point_feature, 5,
              "Length of raw point feature. Features include x, y, z,"
              "intensity and delta of time.");
+DEFINE_bool(enable_ground_removal, false, "Enable ground removal.");
+DEFINE_double(ground_removal_height, -1.5, "Height for ground removal.");
 DEFINE_bool(enable_downsample_beams, false,
             "Enable down sampling point cloud beams with a factor.");
 DEFINE_int32(downsample_beams_factor, 4,
@@ -72,7 +74,8 @@ DEFINE_double(fuse_time_interval, 0.5,
               "Time interval in seconds of frames to fuse.");
 DEFINE_bool(enable_shuffle_points, false,
             "Enable shuffling points before preprocessing.");
-DEFINE_int32(max_num_points, INT_MAX, "Max number of points to preprocess.");
+DEFINE_int32(max_num_points, std::numeric_limits<int>::max(),
+             "Max number of points to preprocess.");
 DEFINE_bool(reproduce_result_mode, false, "True if preprocess in CPU mode.");
 DEFINE_double(score_threshold, 0.5, "Classification score threshold.");
 DEFINE_double(nms_overlap_threshold, 0.5, "Nms overlap threshold.");

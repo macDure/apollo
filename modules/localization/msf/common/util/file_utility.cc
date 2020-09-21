@@ -20,8 +20,8 @@
 
 #include <algorithm>
 #include <cerrno>
-#include <climits>
 #include <iostream>
+#include <limits>
 
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>

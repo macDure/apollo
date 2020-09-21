@@ -16,7 +16,7 @@
 # limitations under the License.
 ###############################################################################
 
-APOLLO_ROOT_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+APOLLO_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 APOLLO_IN_DOCKER=false
 
 # If inside docker container
@@ -42,19 +42,19 @@ YELLOW='\033[33m'
 NO_COLOR='\033[0m'
 
 function info() {
-  (>&2 echo -e "[${WHITE}${BOLD}INFO${NO_COLOR}] $*")
+  (echo >&2 -e "[${WHITE}${BOLD}INFO${NO_COLOR}] $*")
 }
 
 function error() {
-  (>&2 echo -e "[${RED}ERROR${NO_COLOR}] $*")
+  (echo >&2 -e "[${RED}ERROR${NO_COLOR}] $*")
 }
 
 function warning() {
-  (>&2 echo -e "${YELLOW}[WARNING] $*${NO_COLOR}")
+  (echo >&2 -e "${YELLOW}[WARNING] $*${NO_COLOR}")
 }
 
 function ok() {
-  (>&2 echo -e "[${GREEN}${BOLD} OK ${NO_COLOR}] $*")
+  (echo >&2 -e "[${GREEN}${BOLD} OK ${NO_COLOR}] $*")
 }
 
 function print_delim() {
@@ -84,48 +84,44 @@ function fail() {
   exit 1
 }
 
-function determine_gpu_use() {
-    local arch="$(uname -m)"
-    local use_gpu=0
+function determine_gpu_use_target() {
+  local arch="$(uname -m)"
+  local use_gpu=0
 
-    if [[ "${arch}" == "aarch64" ]]; then
-        if lsmod | grep -q nvgpu; then
-            if ldconfig -p | grep -q cudart; then
-                use_gpu=1
-            fi
-        fi
-    else ## x86_64 mode
-        # TODO(all): remove USE_GPU env var in {cyber,dev}_start.sh"
-        # Check nvidia-driver and GPU device
-        local nv_driver="nvidia-smi"
-        if [ ! -x "$(command -v ${nv_driver} )" ]; then
-            warning "No nvidia-driver found. CPU will be used."
-        elif [ -z "$(eval ${nv_driver} )" ]; then
-            warning "No GPU device found. CPU will be used."
-        else
-            use_gpu=1
-        fi
+  if [[ "${arch}" == "aarch64" ]]; then
+    if lsmod | grep -q nvgpu; then
+      if ldconfig -p | grep -q cudart; then
+        use_gpu=1
+      fi
     fi
-    export USE_GPU="${use_gpu}"
+  else ## x86_64 mode
+    # Check nvidia-driver and GPU device
+    local nv_driver="nvidia-smi"
+    if [ ! -x "$(command -v ${nv_driver})" ]; then
+      warning "No nvidia-driver found. CPU will be used."
+    elif [ -z "$(eval ${nv_driver})" ]; then
+      warning "No GPU device found. CPU will be used."
+    else
+      use_gpu=1
+    fi
+  fi
+  export USE_GPU_TARGET="${use_gpu}"
 }
 
-if [ -z "${USE_GPU}" ]; then
-    determine_gpu_use
-fi
-
 function file_ext() {
-  local __ext="${1##*.}"
-  if [ "${__ext}" == "$1" ]; then
-    __ext=""
+  local filename="$(basename $1)"
+  local actual_ext="${filename##*.}"
+  if [[ "${actual_ext}" == "${filename}" ]]; then
+    actual_ext=""
   fi
-  echo "${__ext}"
+  echo "${actual_ext}"
 }
 
 function c_family_ext() {
-  local __ext
-  __ext="$(file_ext $1)"
+  local actual_ext
+  actual_ext="$(file_ext $1)"
   for ext in "h" "hh" "hxx" "hpp" "cxx" "cc" "cpp" "cu"; do
-    if [ "${ext}" == "${__ext}" ]; then
+    if [[ "${ext}" == "${actual_ext}" ]]; then
       return 0
     fi
   done
@@ -133,15 +129,85 @@ function c_family_ext() {
 }
 
 function find_c_cpp_srcs() {
-  find "$@" -type f -name "*.h"   \
-                 -o -name "*.c"   \
-                 -o -name "*.hpp" \
-                 -o -name "*.cpp" \
-                 -o -name "*.hh"  \
-                 -o -name "*.cc"  \
-                 -o -name "*.hxx" \
-                 -o -name "*.cxx" \
-                 -o -name "*.cu"
+  find "$@" -type f -name "*.h" \
+    -o -name "*.c" \
+    -o -name "*.hpp" \
+    -o -name "*.cpp" \
+    -o -name "*.hh" \
+    -o -name "*.cc" \
+    -o -name "*.hxx" \
+    -o -name "*.cxx" \
+    -o -name "*.cu"
+}
+
+function proto_ext() {
+  if [[ "$(file_ext $1)" == "proto" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function find_proto_srcs() {
+  find "$@" -type f -name "*.proto"
+}
+
+function py_ext() {
+  if [[ "$(file_ext $1)" == "py" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function find_py_srcs() {
+  find "$@" -type f -name "*.py"
+}
+
+function bash_ext() {
+  local actual_ext
+  actual_ext="$(file_ext $1)"
+  for ext in "sh" "bash" "bashrc"; do
+    if [[ "${ext}" == "${actual_ext}" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+function bazel_extended() {
+  local actual_ext="$(file_ext $1)"
+  if [[ -z "${actual_ext}" ]]; then
+    if [[ "${arg}" == "BUILD" || "${arg}" == "WORKSPACE" ]]; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    for ext in "BUILD" "bazel" "bzl"; do
+      if [[ "${ext}" == "${actual_ext}" ]]; then
+        return 0
+      fi
+    done
+    return 1
+  fi
+}
+
+function prettier_ext() {
+  local actual_ext
+  actual_ext="$(file_ext $1)"
+  for ext in "md" "json" "yml"; do
+    if [[ "${ext}" == "${actual_ext}" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+function find_prettier_srcs() {
+  find "$@" -type f -name "*.md" \
+    -or -name "*.json" \
+    -or -name "*.yml"
 }
 
 ## Prevent multiple entries of my_bin_path in PATH
@@ -170,7 +236,6 @@ function add_to_ld_library_path() {
   export LD_LIBRARY_PATH="${result}"
 }
 
-
 # Exits the script if the command fails.
 function run() {
   if [ "${VERBOSE}" = yes ]; then
@@ -189,22 +254,22 @@ function run() {
 
 #commit_id=$(git log -1 --pretty=%H)
 function git_sha1() {
-  if [ -x "$(which git 2>/dev/null)" ] && \
-     [ -d "${APOLLO_ROOT_DIR}/.git" ]; then
+  if [ -x "$(which git 2>/dev/null)" ] &&
+    [ -d "${APOLLO_ROOT_DIR}/.git" ]; then
     git rev-parse --short HEAD 2>/dev/null || true
   fi
 }
 
 function git_date() {
-  if [ -x "$(which git 2>/dev/null)" ] && \
-     [ -d "${APOLLO_ROOT_DIR}/.git" ]; then
+  if [ -x "$(which git 2>/dev/null)" ] &&
+    [ -d "${APOLLO_ROOT_DIR}/.git" ]; then
     git log -1 --pretty=%ai | cut -d " " -f 1 || true
   fi
 }
 
 function git_branch() {
-  if [ -x "$(which git 2>/dev/null)" ] && \
-     [ -d "${APOLLO_ROOT_DIR}/.git" ]; then
+  if [ -x "$(which git 2>/dev/null)" ] &&
+    [ -d "${APOLLO_ROOT_DIR}/.git" ]; then
     git rev-parse --abbrev-ref HEAD
   else
     echo "@non-git"
@@ -219,7 +284,30 @@ function read_one_char_from_stdin() {
 }
 
 function optarg_check_for_opt() {
-    local opt="$1"
-    local optarg="$2"
-    ! [[ -z "${optarg}" || "${optarg}" =~ ^-.* ]]
+  local opt="$1"
+  local optarg="$2"
+  ! [[ -z "${optarg}" || "${optarg}" =~ ^-.* ]]
 }
+
+function setup_gpu_support() {
+  if [ -e /usr/local/cuda/ ]; then
+    add_to_path "/usr/local/cuda/bin"
+  fi
+
+  determine_gpu_use_target
+
+  local dev=
+  if [ "${USE_GPU_TARGET}" -eq 0 ]; then
+    dev="cpu"
+  else
+    dev="gpu"
+  fi
+
+  local torch_path="/usr/local/libtorch_${dev}/lib"
+  if [ -d "${torch_path}" ]; then
+    # Runtime default: for ./bazel-bin/xxx/yyy to work as expected
+    export LD_LIBRARY_PATH="${torch_path}:$LD_LIBRARY_PATH"
+  fi
+}
+
+setup_gpu_support

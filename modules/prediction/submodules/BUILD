@@ -2,20 +2,18 @@ load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
+PREDICTION_COPTS = ["-DMODULE_NAME=\\\"prediction\\\""]
 
 cc_library(
     name = "submodule_output",
     srcs = ["submodule_output.cc"],
     hdrs = ["submodule_output.h"],
-    copts = [
-        "-DMODULE_NAME=\\\"prediction\\\"",
-    ],
+    copts = PREDICTION_COPTS,
     deps = [
         "//modules/common/util:lru_cache",
         "//modules/perception/proto:perception_obstacle_cc_proto",
         "//modules/prediction/common:prediction_gflags",
         "//modules/prediction/container/obstacles:obstacle",
-        "@com_google_absl//absl/time",
     ],
 )
 
@@ -23,14 +21,12 @@ cc_library(
     name = "evaluator_submodule_lib",
     srcs = ["evaluator_submodule.cc"],
     hdrs = ["evaluator_submodule.h"],
-    copts = [
-        "-DMODULE_NAME=\\\"prediction\\\"",
-    ],
+    copts = PREDICTION_COPTS,
     deps = [
         "//cyber",
+        "//cyber/time:clock",
         "//modules/common/adapters:adapter_gflags",
         "//modules/common/adapters/proto:adapter_config_cc_proto",
-        "//modules/common/time",
         "//modules/perception/proto:perception_obstacle_cc_proto",
         "//modules/prediction/common:message_process",
         "//modules/prediction/common:prediction_gflags",
@@ -50,14 +46,12 @@ cc_library(
     name = "predictor_submodule_lib",
     srcs = ["predictor_submodule.cc"],
     hdrs = ["predictor_submodule.h"],
-    copts = [
-        "-DMODULE_NAME=\\\"prediction\\\"",
-    ],
+    copts = PREDICTION_COPTS,
     deps = [
         "//cyber",
+        "//cyber/time:clock",
         "//modules/common/adapters:adapter_gflags",
         "//modules/common/adapters/proto:adapter_config_cc_proto",
-        "//modules/common/time",
         "//modules/common/util:message_util",
         "//modules/perception/proto:perception_obstacle_cc_proto",
         "//modules/prediction/common:message_process",

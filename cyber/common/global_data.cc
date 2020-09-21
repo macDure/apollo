@@ -22,7 +22,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <climits>
 #include <cstdlib>
 #include <functional>
 
@@ -42,7 +41,7 @@ namespace {
 const std::string& kEmptyString = "";
 std::string program_path() {
   char path[PATH_MAX];
-  auto len = readlink("/proc/self/exe", path, sizeof(path));
+  auto len = readlink("/proc/self/exe", path, sizeof(path) - 1);
   if (len == -1) {
     return kEmptyString;
   }

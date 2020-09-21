@@ -3,9 +3,11 @@ load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
 
+BRIDGE_COPTS = ['-DMODULE_NAME=\\"bridge\\"']
+
 cc_library(
     name = "udp_bridge",
-    copts = ['-DMODULE_NAME=\\"bridge\\"'],
+    copts = BRIDGE_COPTS,
     deps = [
         "//cyber",
         "//modules/bridge/common:bridge_gflags",
@@ -18,7 +20,6 @@ cc_library(
         "//modules/bridge/proto:udp_bridge_remote_info_cc_proto",
         "//modules/common/adapters:adapter_gflags",
         "//modules/common/monitor_log",
-        "//modules/common/time",
         "//modules/common/util",
         "//modules/planning/proto:planning_cc_proto",
         "@com_github_gflags_gflags//:gflags",
@@ -29,7 +30,7 @@ cc_library(
     name = "udp_bridge_sender",
     srcs = ["udp_bridge_sender_component.cc"],
     hdrs = ["udp_bridge_sender_component.h"],
-    copts = ['-DMODULE_NAME=\\"bridge\\"'],
+    copts = BRIDGE_COPTS,
     deps = [
         ":udp_bridge",
     ],
@@ -39,7 +40,7 @@ cc_library(
     name = "udp_bridge_receiver",
     srcs = ["udp_bridge_receiver_component.cc"],
     hdrs = ["udp_bridge_receiver_component.h"],
-    copts = ['-DMODULE_NAME=\\"bridge\\"'],
+    copts = BRIDGE_COPTS,
     deps = [
         ":udp_bridge",
         "//modules/bridge/common:udp_listener",
@@ -50,7 +51,7 @@ cc_library(
     name = "udp_bridge_multi_receiver",
     srcs = ["udp_bridge_multi_receiver_component.cc"],
     hdrs = ["udp_bridge_multi_receiver_component.h"],
-    copts = ['-DMODULE_NAME=\\"bridge\\"'],
+    copts = BRIDGE_COPTS,
     deps = [
         ":udp_bridge",
         "//modules/bridge/common:udp_listener",

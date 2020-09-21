@@ -20,9 +20,9 @@ INSTALL_MODE="$1"; shift
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-. /tmp/installers/installer_base.sh
+. ./installer_base.sh
 
-VERSION=3.16.8
+VERSION="3.16.8"
 
 TARGET_ARCH="$(uname -m)"
 
@@ -54,8 +54,7 @@ elif [[ "${TARGET_ARCH}" == "aarch64" ]]; then
     # Build CMake from source for aarch64 #
     #=====================================#
     # PreReq for source build
-    apt-get -y update && \
-        apt-get -y install \
+    apt_get_update_and_install \
         libssl-dev \
         libcurl4-openssl-dev
     PKG_NAME="CMake-${VERSION}.tar.gz"
@@ -71,7 +70,9 @@ elif [[ "${TARGET_ARCH}" == "aarch64" ]]; then
     popd
 
     rm -rf "CMake-${VERSION}" "${PKG_NAME}"
-    # Clean up cache to reduce layer size.
-    apt-get clean && \
-        rm -rf /var/lib/apt/lists/*
+    apt_get_remove libssl-dev libcurl4-openssl-dev
 fi
+
+# Clean up cache to reduce layer size.
+apt-get clean && \
+    rm -rf /var/lib/apt/lists/*

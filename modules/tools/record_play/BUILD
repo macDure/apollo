@@ -15,6 +15,7 @@ py_binary(
         "//modules/control/proto:pad_msg_py_pb2",
         "//modules/localization/proto:localization_py_pb2",
         "//modules/planning/proto:planning_py_pb2",
+        "//modules/tools/common:logger",
         "//modules/tools/common:proto_utils",
     ],
 )
@@ -26,6 +27,7 @@ py_binary(
         "//cyber/python/cyber_py3:cyber",
         "//modules/canbus/proto:chassis_py_pb2",
         "//modules/localization/proto:localization_py_pb2",
+        "//modules/tools/common:logger",
         "//modules/tools/common:proto_utils",
     ],
 )

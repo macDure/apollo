@@ -20,8 +20,7 @@
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
-
-. /tmp/installers/installer_base.sh
+. ./installer_base.sh
 
 ARCH="$(uname -m)"
 
@@ -43,13 +42,13 @@ libnvparsers${MAJOR}_${TRT_VERSION}_arm64.deb \
 libnvparsers-dev_${TRT_VERSION}_arm64.deb \
 "
 
-    # tensorrt_7.1.0.16-1+cuda10.2_arm64.deb 
+    # tensorrt_7.1.0.16-1+cuda10.2_arm64.deb
     # libnvinfer-doc_${TRT_VERSION}_all.deb
     # libnvinfer-samples_${TRT_VERSION}_all.deb
 
     for pkg in ${TRT_PKGS}; do
         info "Downloading ${LOCAL_HTTP_ADDR}/${pkg}"
-        wget "${LOCAL_HTTP_ADDR}/${pkg}"
+        wget "${LOCAL_HTTP_ADDR}/${pkg}" >/dev/null
     done
 
     dpkg -i ${TRT_PKGS}
@@ -74,27 +73,25 @@ fixed_version=true
 
 if ${fixed_version}; then
     VERSION="7.0.0-1+cuda10.2"
-    apt-get -y update && \
-        apt-get -y install \
-	    libnvinfer7="${VERSION}" \
-	    libnvonnxparsers7="${VERSION}" \
-	    libnvparsers7="${VERSION}" \
-	    libnvinfer-plugin7="${VERSION}" \
-        libnvinfer-dev="${VERSION}" \
-        libnvonnxparsers-dev="${VERSION}" \
-        libnvparsers-dev="${VERSION}" \
-        libnvinfer-plugin-dev="${VERSION}"
+    apt_get_update_and_install \
+            libnvinfer7="${VERSION}" \
+            libnvonnxparsers7="${VERSION}" \
+            libnvparsers7="${VERSION}" \
+            libnvinfer-plugin7="${VERSION}" \
+            libnvinfer-dev="${VERSION}" \
+            libnvonnxparsers-dev="${VERSION}" \
+            libnvparsers-dev="${VERSION}" \
+            libnvinfer-plugin-dev="${VERSION}"
 else
-    apt-get -y update && \
-        apt-get -y install \
-	    libnvinfer7 \
-	    libnvonnxparsers7 \
-	    libnvparsers7 \
-	    libnvinfer-plugin7 \
-        libnvinfer-dev \
-        libnvonnxparsers-dev \
-        libnvparsers-dev \
-        libnvinfer-plugin-dev
+    apt_get_update_and_install \
+            libnvinfer7 \
+            libnvonnxparsers7 \
+            libnvparsers7 \
+            libnvinfer-plugin7 \
+            libnvinfer-dev \
+            libnvonnxparsers-dev \
+            libnvparsers-dev \
+            libnvinfer-plugin-dev
 fi
 
 # FIXME(all):
@@ -105,7 +102,7 @@ fi
 # 2) move to cudnn installer section
 
 CUDNN_HEADER_DIR="/usr/include/$(uname -m)-linux-gnu"
-[ -e "${CUDNN_HEADER_DIR}/cudnn.h" ] || \
+[ -e "${CUDNN_HEADER_DIR}/cudnn.h" ] ||
     ln -s "${CUDNN_HEADER_DIR}/cudnn_v7.h" "${CUDNN_HEADER_DIR}/cudnn.h"
 
 # Disable nvidia apt sources.list settings to speed up build process

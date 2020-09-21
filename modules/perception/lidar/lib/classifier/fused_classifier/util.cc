@@ -103,9 +103,8 @@ bool LoadSingleMatrixFile(const std::string& filename, Matrixd* matrix) {
   return true;
 }
 
-bool LoadMultipleMatricesFile(
-    const std::string& filename,
-    EigenMap<std::string, Matrixd>* matrices) {
+bool LoadMultipleMatricesFile(const std::string& filename,
+                              EigenMap<std::string, Matrixd>* matrices) {
   if (matrices == nullptr) {
     return false;
   }
@@ -117,6 +116,10 @@ bool LoadMultipleMatricesFile(
   matrices->clear();
   size_t num = 0;
   fin >> num;
+  if (num > 100) {
+    fin.close();
+    return false;
+  }
   for (size_t i = 0; i < num; ++i) {
     std::string name;
     fin >> name;

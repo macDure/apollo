@@ -19,9 +19,8 @@
 # Fail on first error.
 set -e
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
-
-. /tmp/installers/installer_base.sh
+CURR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+. ${CURR_DIR}/installer_base.sh
 
 TARGET_ARCH="$(uname -m)"
 
@@ -31,7 +30,6 @@ TARGET_ARCH="$(uname -m)"
 apt-get -y update && \
     apt-get -y install \
     cppcheck    \
-    shellcheck  \
     lcov        \
     valgrind
 
@@ -42,13 +40,24 @@ apt-get -y update && \
 #    ln -s "${PROFILER_SO}.0" "${PROFILER_SO}"
 # fi
 
-bash /tmp/installers/install_gperftools.sh
+bash ${CURR_DIR}/install_shellcheck.sh
+bash ${CURR_DIR}/install_gperftools.sh
+bash ${CURR_DIR}/install_benchmark.sh
+# TechDoc generation
+bash ${CURR_DIR}/install_doxygen.sh
+
+# sphinx ?
 
 ## Pylint
 pip3_install pycodestyle \
     pyflakes \
-    flake8
+    flake8 \
+    yapf \
+    autopep8
 # pylint
+
+# shfmt
+bash ${CURR_DIR}/install_shfmt.sh
 
 # Clean up cache to reduce layer size.
 apt-get clean && \

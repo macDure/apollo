@@ -28,6 +28,7 @@
 #include "modules/perception/common/perception_gflags.h"
 #include "modules/perception/lidar/common/lidar_timer.h"
 #include "modules/perception/lidar/common/pcl_util.h"
+#include "modules/perception/lidar/lib/detection/lidar_point_pillars/params.h"
 
 namespace apollo {
 namespace perception {
@@ -37,12 +38,24 @@ using base::Object;
 using base::PointD;
 using base::PointF;
 
+PointPillarsDetection::PointPillarsDetection()
+    : x_min_(Params::kMinXRange),
+      x_max_(Params::kMaxXRange),
+      y_min_(Params::kMinYRange),
+      y_max_(Params::kMaxYRange),
+      z_min_(Params::kMinZRange),
+      z_max_(Params::kMaxZRange) {
+  if (FLAGS_enable_ground_removal) {
+    z_min_ = std::max(z_min_, static_cast<float>(FLAGS_ground_removal_height));
+  }
+}
+
 // TODO(chenjiahao):
 //  specify score threshold and nms over lap threshold for each class.
 bool PointPillarsDetection::Init(const DetectionInitOptions& options) {
   point_pillars_ptr_.reset(new PointPillars(
       FLAGS_reproduce_result_mode, FLAGS_score_threshold,
-      FLAGS_nms_overlap_threshold, FLAGS_pfe_onnx_file, FLAGS_rpn_onnx_file));
+      FLAGS_nms_overlap_threshold, FLAGS_pfe_torch_file, FLAGS_rpn_onnx_file));
   return true;
 }
 
@@ -85,11 +98,12 @@ bool PointPillarsDetection::Detect(const DetectionOptions& options,
   if (FLAGS_enable_downsample_beams) {
     base::PointFCloudPtr downsample_beams_cloud_ptr(new base::PointFCloud());
     if (DownSamplePointCloudBeams(original_cloud_, downsample_beams_cloud_ptr,
-        FLAGS_downsample_beams_factor)) {
+                                  FLAGS_downsample_beams_factor)) {
       cur_cloud_ptr_ = downsample_beams_cloud_ptr;
     } else {
-      AWARN << "Down sample beams factor must be >= 1. Cancel down sampling."
-               " Current factor: " << FLAGS_downsample_beams_factor;
+      AWARN << "Down-sample beams factor must be >= 1. Cancel down-sampling."
+               " Current factor: "
+            << FLAGS_downsample_beams_factor;
     }
   }
 
@@ -116,13 +130,13 @@ bool PointPillarsDetection::Detect(const DetectionOptions& options,
   AINFO << "num points before fusing: " << num_points;
 
   // fuse clouds of preceding frames with current cloud
-  cur_cloud_ptr_->mutable_points_timestamp()->assign(
-      cur_cloud_ptr_->size(), 0.0);
+  cur_cloud_ptr_->mutable_points_timestamp()->assign(cur_cloud_ptr_->size(),
+                                                     0.0);
   if (FLAGS_enable_fuse_frames && FLAGS_num_fuse_frames > 1) {
     // before fusing
     while (!prev_world_clouds_.empty() &&
-        frame->timestamp - prev_world_clouds_.front()->get_timestamp() >
-            FLAGS_fuse_time_interval) {
+           frame->timestamp - prev_world_clouds_.front()->get_timestamp() >
+               FLAGS_fuse_time_interval) {
       prev_world_clouds_.pop_front();
     }
     // transform current cloud to world coordinate and save to a new ptr
@@ -149,7 +163,7 @@ bool PointPillarsDetection::Detect(const DetectionOptions& options,
 
     // after fusing
     while (static_cast<int>(prev_world_clouds_.size()) >=
-        FLAGS_num_fuse_frames - 1) {
+           FLAGS_num_fuse_frames - 1) {
       prev_world_clouds_.pop_front();
     }
     prev_world_clouds_.emplace_back(cur_world_cloud_ptr);
@@ -201,19 +215,28 @@ void PointPillarsDetection::CloudToArray(const base::PointFCloudPtr& pc_ptr,
                                          const float normalizing_factor) {
   for (size_t i = 0; i < pc_ptr->size(); ++i) {
     const auto& point = pc_ptr->at(i);
-    out_points_array[i * FLAGS_num_point_feature + 0] = point.x;
-    out_points_array[i * FLAGS_num_point_feature + 1] = point.y;
-    out_points_array[i * FLAGS_num_point_feature + 2] = point.z;
+    float x = point.x;
+    float y = point.y;
+    float z = point.z;
+    float intensity = point.intensity;
+    if (z < z_min_ || z > z_max_ || y < y_min_ || y > y_max_ || x < x_min_ ||
+        x > x_max_) {
+      continue;
+    }
+    out_points_array[i * FLAGS_num_point_feature + 0] = x;
+    out_points_array[i * FLAGS_num_point_feature + 1] = y;
+    out_points_array[i * FLAGS_num_point_feature + 2] = z;
     out_points_array[i * FLAGS_num_point_feature + 3] =
-        point.intensity / normalizing_factor;
+        intensity / normalizing_factor;
     // delta of timestamp between prev and cur frames
     out_points_array[i * FLAGS_num_point_feature + 4] =
         static_cast<float>(pc_ptr->points_timestamp(i));
   }
 }
 
-void PointPillarsDetection::FuseCloud(const base::PointFCloudPtr& out_cloud_ptr,
-    const std::deque<base::PointDCloudPtr> &fuse_clouds) {
+void PointPillarsDetection::FuseCloud(
+    const base::PointFCloudPtr& out_cloud_ptr,
+    const std::deque<base::PointDCloudPtr>& fuse_clouds) {
   for (auto iter = fuse_clouds.rbegin(); iter != fuse_clouds.rend(); ++iter) {
     double delta_t = lidar_frame_ref_->timestamp - (*iter)->get_timestamp();
     // transform prev world point cloud to current sensor's coordinates
@@ -326,7 +349,8 @@ void PointPillarsDetection::GetObjects(
   }
 }
 
-// TODO(chenjiahao): update the base ObjectSubType with more fine-grained types
+// TODO(all): update the base ObjectSubType with more fine-grained types
+// TODO(chenjiahao): move types into an array in the same order as offline
 base::ObjectSubType PointPillarsDetection::GetObjectSubType(const int label) {
   switch (label) {
     case 0:
@@ -335,19 +359,17 @@ base::ObjectSubType PointPillarsDetection::GetObjectSubType(const int label) {
       return base::ObjectSubType::CAR;
     case 2:  // construction vehicle
       return base::ObjectSubType::UNKNOWN_MOVABLE;
-    case 3:  // trailer
-      return base::ObjectSubType::UNKNOWN_MOVABLE;
-    case 4:
+    case 3:
       return base::ObjectSubType::TRUCK;
-    case 5:  // barrier
+    case 4:  // barrier
       return base::ObjectSubType::UNKNOWN_UNMOVABLE;
-    case 6:
+    case 5:
       return base::ObjectSubType::CYCLIST;
-    case 7:
+    case 6:
       return base::ObjectSubType::MOTORCYCLIST;
-    case 8:
+    case 7:
       return base::ObjectSubType::PEDESTRIAN;
-    case 9:
+    case 8:
       return base::ObjectSubType::TRAFFICCONE;
     default:
       return base::ObjectSubType::UNKNOWN;

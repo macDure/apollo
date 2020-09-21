@@ -1,11 +1,13 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 load("//tools:cpplint.bzl", "cpplint")
+load("//tools/platform:build_defs.bzl", "if_gpu")
 
 package(default_visibility = ["//visibility:public"])
+PLANNING_COPTS = ["-DMODULE_NAME=\\\"planning\\\""]
 
 cc_library(
     name = "lane_follow",
-    copts = ["-DMODULE_NAME=\\\"planning\\\""],
+    copts = PLANNING_COPTS,
     deps = [
         ":lane_follow_scenario",
         ":lane_follow_stage",
@@ -16,12 +18,12 @@ cc_library(
     name = "lane_follow_stage",
     srcs = ["lane_follow_stage.cc"],
     hdrs = ["lane_follow_stage.h"],
-    copts = ["-DMODULE_NAME=\\\"planning\\\""],
+    copts = PLANNING_COPTS,
     deps = [
         "//cyber/common:log",
+        "//cyber/time:clock",
         "//modules/common/proto:pnc_point_cc_proto",
         "//modules/common/status",
-        "//modules/common/time",
         "//modules/common/util",
         "//modules/common/util:factory",
         "//modules/common/vehicle_state:vehicle_state_provider",
@@ -49,13 +51,13 @@ cc_library(
     name = "lane_follow_scenario",
     srcs = ["lane_follow_scenario.cc"],
     hdrs = ["lane_follow_scenario.h"],
-    copts = ["-DMODULE_NAME=\\\"planning\\\""],
+    copts = PLANNING_COPTS,
     deps = [
         ":lane_follow_stage",
         "//cyber/common:log",
+        "//cyber/time:clock",
         "//modules/common/proto:pnc_point_cc_proto",
         "//modules/common/status",
-        "//modules/common/time",
         "//modules/common/util",
         "//modules/common/util:factory",
         "//modules/common/vehicle_state:vehicle_state_provider",
@@ -85,11 +87,11 @@ cc_test(
     data = [
         "//modules/planning:planning_conf",
     ],
+    linkopts = ["-lgomp"],
     deps = [
         ":lane_follow",
         "@com_google_googletest//:gtest_main",
-        "@local_config_cuda//cuda:cudart",
-    ],
+    ] + if_gpu(["@local_config_cuda//cuda:cudart"]),
 )
 
 cpplint()

@@ -15,28 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ###############################################################################
-TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd -P)"
+
+TOP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 source ${TOP_DIR}/scripts/apollo.bashrc
 
 HOST_ARCH="$(uname -m)"
 
 function set_lib_path() {
   local CYBER_SETUP="${APOLLO_ROOT_DIR}/cyber/setup.bash"
-  [[ -e "${CYBER_SETUP}" ]] && . "${CYBER_SETUP}"
+  [ -e "${CYBER_SETUP}" ] && . "${CYBER_SETUP}"
 
   # TODO(storypku):
   # /usr/local/apollo/local_integ/lib
-
-  if [ -e /usr/local/cuda/ ];then
-    add_to_path "/usr/local/cuda/bin"
-  fi
-
-  # TODO(storypku): Remove this!
-  if [ "$USE_GPU" != "1" ];then
-    export LD_LIBRARY_PATH=/usr/local/libtorch_cpu/lib:$LD_LIBRARY_PATH
-  else
-    export LD_LIBRARY_PATH=/usr/local/libtorch_gpu/lib:$LD_LIBRARY_PATH
-  fi
 
   # FIXME(all): remove PYTHONPATH settings
   export PYTHONPATH="${APOLLO_ROOT_DIR}/modules/tools:${PYTHONPATH}"
@@ -60,26 +50,11 @@ function determine_bin_prefix() {
   export APOLLO_BIN_PREFIX
 }
 
-function find_device() {
-  # ${1} = device pattern
-  local device_list=$(find /dev -name "${1}")
-  if [ -z "${device_list}" ]; then
-    warning "Failed to find device with pattern \"${1}\" ..."
-  else
-    local devices=""
-    for device in $(find /dev -name "${1}"); do
-      ok "Found device: ${device}."
-      devices="${devices} --device ${device}:${device}"
-    done
-    echo "${devices}"
-  fi
-}
-
 function setup_device_for_aarch64() {
   local can_dev="/dev/can0"
   if [ ! -e "${can_dev}" ]; then
-      warning "No CAN device named ${can_dev}. "
-      return
+    warning "No CAN device named ${can_dev}. "
+    return
   fi
 
   sudo ip link set can0 type can bitrate 500000
@@ -88,9 +63,9 @@ function setup_device_for_aarch64() {
 
 function setup_device_for_amd64() {
   # setup CAN device
-  for INDEX in $(seq 0 3) ; do
+  for INDEX in $(seq 0 3); do
     # soft link if sensorbox exist
-    if [ -e /dev/zynq_can${INDEX} ] &&  [ ! -e /dev/can${INDEX} ]; then
+    if [ -e /dev/zynq_can${INDEX} ] && [ ! -e /dev/can${INDEX} ]; then
       sudo ln -s /dev/zynq_can${INDEX} /dev/can${INDEX}
     fi
     if [ ! -e /dev/can${INDEX} ]; then
@@ -101,19 +76,19 @@ function setup_device_for_amd64() {
   # setup nvidia device
   sudo /sbin/modprobe nvidia
   sudo /sbin/modprobe nvidia-uvm
-  if [ ! -e /dev/nvidia0 ];then
+  if [ ! -e /dev/nvidia0 ]; then
     info "mknod /dev/nvidia0"
     sudo mknod -m 666 /dev/nvidia0 c 195 0
   fi
-  if [ ! -e /dev/nvidiactl ];then
+  if [ ! -e /dev/nvidiactl ]; then
     info "mknod /dev/nvidiactl"
     sudo mknod -m 666 /dev/nvidiactl c 195 255
   fi
-  if [ ! -e /dev/nvidia-uvm ];then
+  if [ ! -e /dev/nvidia-uvm ]; then
     info "mknod /dev/nvidia-uvm"
     sudo mknod -m 666 /dev/nvidia-uvm c 243 0
   fi
-  if [ ! -e /dev/nvidia-uvm-tools ];then
+  if [ ! -e /dev/nvidia-uvm-tools ]; then
     info "mknod /dev/nvidia-uvm-tools"
     sudo mknod -m 666 /dev/nvidia-uvm-tools c 243 1
   fi
@@ -125,21 +100,21 @@ function setup_device() {
     return
   fi
   if [[ "${HOST_ARCH}" == "x86_64" ]]; then
-      setup_device_for_amd64
+    setup_device_for_amd64
   else
-      setup_device_for_aarch64
+    setup_device_for_aarch64
   fi
 }
 
 function decide_task_dir() {
   # Try to find largest NVMe drive.
-  DISK="$(df | grep "^/dev/nvme" | sort -nr -k 4 | \
-      awk '{print substr($0, index($0, $6))}')"
+  DISK="$(df | grep "^/dev/nvme" | sort -nr -k 4 \
+    | awk '{print substr($0, index($0, $6))}')"
 
   # Try to find largest external drive.
   if [ -z "${DISK}" ]; then
-    DISK="$(df | grep "/media/${DOCKER_USER}" | sort -nr -k 4 | \
-        awk '{print substr($0, index($0, $6))}')"
+    DISK="$(df | grep "/media/${DOCKER_USER}" | sort -nr -k 4 \
+      | awk '{print substr($0, index($0, $6))}')"
   fi
 
   if [ -z "${DISK}" ]; then
@@ -161,7 +136,7 @@ function decide_task_dir() {
 function is_stopped_customized_path() {
   MODULE_PATH=$1
   MODULE=$2
-  NUM_PROCESSES="$(pgrep -c -f "modules/${MODULE_PATH}/launch/${MODULE}.launch")"
+  NUM_PROCESSES="$(pgrep -f "modules/${MODULE_PATH}/launch/${MODULE}.launch" | grep -cv '^1$')"
   if [ "${NUM_PROCESSES}" -eq 0 ]; then
     return 1
   else
@@ -301,7 +276,7 @@ function stop() {
 # Note: This 'help' function here will overwrite the bash builtin command 'help'.
 # TODO: add a command to query known modules.
 function help() {
-cat <<EOF
+  cat << EOF
 Invoke ". scripts/apollo_base.sh" within docker to add the following commands to the environment:
 Usage: COMMAND [<module_name>]
 
@@ -340,7 +315,7 @@ function run_customized_path() {
       ;;
     *)
       start_customized_path $module_path $module $cmd "$@"
-    ;;
+      ;;
   esac
 }
 
@@ -350,7 +325,7 @@ function record_bag_env_log() {
     TASK_ID=$(date +%Y-%m-%d-%H-%M)
   fi
 
-  git status >/dev/null 2>&1
+  git status > /dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "Not in Git repo, maybe because you are in release container."
     echo "Skip log environment."
@@ -359,8 +334,8 @@ function record_bag_env_log() {
 
   commit=$(git log -1)
   echo -e "Date:$(date)\n" >> Bag_Env_$TASK_ID.log
-  git branch | awk '/\*/ { print "current branch: " $2; }'  >> Bag_Env_$TASK_ID.log
-  echo -e "\nNewest commit:\n$commit"  >> Bag_Env_$TASK_ID.log
+  git branch | awk '/\*/ { print "current branch: " $2; }' >> Bag_Env_$TASK_ID.log
+  echo -e "\nNewest commit:\n$commit" >> Bag_Env_$TASK_ID.log
   echo -e "\ngit diff:" >> Bag_Env_$TASK_ID.log
   git diff >> Bag_Env_$TASK_ID.log
   echo -e "\n\n\n\n" >> Bag_Env_$TASK_ID.log

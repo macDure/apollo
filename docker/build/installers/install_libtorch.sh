@@ -19,22 +19,30 @@
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
+. ./installer_base.sh
 
-. /tmp/installers/installer_base.sh
+TARGET_ARCH="$(uname -m)"
+if [ "${TARGET_ARCH}" = "aarch64" ]; then
+    warning "libtorch for aarch64 not ready"
+    exit 0
+fi
+
+# Libtorch-gpu dependency
+pip3_install mkl
 
 # PKG_NAME="libtorch-cxx11-abi-shared-with-deps-1.5.0.zip"
 # DOWNLOAD_LINK="https://download.pytorch.org/libtorch/cu102/${PKG_NAME}"
 # CHECKSUM="0efdd4e709ab11088fa75f0501c19b0e294404231442bab1d1fb953924feb6b5"
 
-PKG_NAME="libtorch-cxx11-abi-shared-with-deps-1.5.0-apollo.zip"
+PKG_NAME="libtorch-1.5.1-gpu-apollo.zip"
 DOWNLOAD_LINK="https://apollo-platform-system.bj.bcebos.com/archive/6.0/${PKG_NAME}"
-CHECKSUM="aeab4ab92cbd96d8bd29c3f85fc4e6e61144528fceb900c123f8c878121c1881"
+CHECKSUM="6e8aa94e2f7086d3ecc79484ade50cdcac69f1b51b1f04e4feda2f9384b4c380"
 
 #https://download.pytorch.org/libtorch/cu102/libtorch-cxx11-abi-shared-with-deps-1.5.0.zip
 download_if_not_cached "${PKG_NAME}" "${CHECKSUM}" "${DOWNLOAD_LINK}"
 unzip ${PKG_NAME}
 
-pushd libtorch
+pushd libtorch_gpu
     mkdir -p /usr/local/libtorch_gpu/
     mv include /usr/local/libtorch_gpu/include
     mv lib     /usr/local/libtorch_gpu/lib
@@ -42,7 +50,7 @@ pushd libtorch
 popd
 
 # Cleanup
-rm -rf libtorch ${PKG_NAME}
+rm -rf libtorch_gpu ${PKG_NAME}
 
 PKG_NAME="libtorch-cxx11-abi-shared-with-deps-1.5.0+cpu.zip"
 DOWNLOAD_LINK="https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.5.0%2Bcpu.zip"

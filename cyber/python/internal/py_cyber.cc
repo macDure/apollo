@@ -691,8 +691,7 @@ static PyObject *cyber_PyChannelUtils_get_channels_info(PyObject *self,
 
     size_t pos = 0;
     for (auto &attr : roleAttr_list) {
-      PyList_SetItem(pyobj_list, pos,
-                     Py_BuildValue("s#", attr.c_str(), attr.size()));
+      PyList_SetItem(pyobj_list, pos, C_STR_TO_PY_BYTES(attr));
       pos++;
     }
     PyDict_SetItem(pyobj_channelinfo_dict, bld_name, pyobj_list);
@@ -904,10 +903,10 @@ static PyMethodDef _cyber_methods[] = {
 PyMODINIT_FUNC PyInit__cyber_wrapper(void) {
   static struct PyModuleDef module_def = {
       PyModuleDef_HEAD_INIT,
-      "_cyber_wrapper",    // Module name.
-      "Cyber module",  // Module doc.
-      -1,              // Module size.
-      _cyber_methods,  // Module methods.
+      "_cyber_wrapper",  // Module name.
+      "Cyber module",    // Module doc.
+      -1,                // Module size.
+      _cyber_methods,    // Module methods.
       nullptr,
       nullptr,
       nullptr,

@@ -44,6 +44,8 @@ class PosesInterpolation {
             const std::string &extrinsic_path);
   void DoInterpolation();
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
  private:
   void LoadPCDTimestamp();
   void WritePCDPoses();
