@@ -102,12 +102,20 @@ ErrorCode ChController::Init(
     return ErrorCode::CANBUS_ERROR;
   }
 
+  ultrasonic_cmd_601_ = dynamic_cast<Ultrasoniccmd601*>(
+      message_manager_->GetMutableProtocolDataById(Ultrasoniccmd601::ID));
+  if (ultrasonic_cmd_601_ == nullptr) {
+    AERROR << "Ultrasoniccmd601 does not exist in the ChMessageManager!";
+    return ErrorCode::CANBUS_ERROR;
+  }
+
   can_sender_->AddMessage(Brakecommand111::ID, brake_command_111_, false);
   can_sender_->AddMessage(Gearcommand114::ID, gear_command_114_, false);
   can_sender_->AddMessage(Steercommand112::ID, steer_command_112_, false);
   can_sender_->AddMessage(Throttlecommand110::ID, throttle_command_110_, false);
   can_sender_->AddMessage(Turnsignalcommand113::ID, turnsignal_command_113_,
                           false);
+  can_sender_->AddMessage(Ultrasoniccmd601::ID, ultrasonic_cmd_601_, false);
 
   // need sleep to ensure all messages received
   AINFO << "ChController is initialized.";

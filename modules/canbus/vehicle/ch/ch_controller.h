@@ -32,6 +32,7 @@
 #include "modules/canbus/vehicle/ch/protocol/steer_command_112.h"
 #include "modules/canbus/vehicle/ch/protocol/throttle_command_110.h"
 #include "modules/canbus/vehicle/ch/protocol/turnsignal_command_113.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic_cmd_601.h"
 
 namespace apollo {
 namespace canbus {
@@ -122,6 +123,7 @@ class ChController final : public VehicleController {
   Steercommand112* steer_command_112_ = nullptr;
   Throttlecommand110* throttle_command_110_ = nullptr;
   Turnsignalcommand113* turnsignal_command_113_ = nullptr;
+  Ultrasoniccmd601* ultrasonic_cmd_601_ = nullptr;
 
   Chassis chassis_;
   std::unique_ptr<std::thread> thread_;

@@ -30,6 +30,9 @@
 #include "modules/canbus/vehicle/ch/protocol/throttle_status__510.h"
 #include "modules/canbus/vehicle/ch/protocol/turnsignal_command_113.h"
 #include "modules/canbus/vehicle/ch/protocol/turnsignal_status__513.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic_cmd_601.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic1_611.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic2_612.h"
 
 namespace apollo {
 namespace canbus {
@@ -154,6 +157,33 @@ TEST_F(ChMessageManagerTest, Turnsignalstatus513) {
   EXPECT_NE(pd, nullptr);
   EXPECT_EQ(static_cast<Turnsignalstatus513 *>(pd)->ID,
             Turnsignalstatus513::ID);
+}
+
+TEST_F(ChMessageManagerTest, Ultrasoniccmd601) {
+  ChMessageManager manager;
+  ProtocolData<ChassisDetail> *pd =
+      manager.GetMutableProtocolDataById(Ultrasoniccmd601::ID);
+  EXPECT_NE(pd, nullptr);
+  EXPECT_EQ(static_cast<Ultrasoniccmd601 *>(pd)->ID,
+            Ultrasoniccmd601::ID);
+}
+
+TEST_F(ChMessageManagerTest, Ultrasonic1611) {
+  ChMessageManager manager;
+  ProtocolData<ChassisDetail> *pd =
+      manager.GetMutableProtocolDataById(Ultrasonic1611::ID);
+  EXPECT_NE(pd, nullptr);
+  EXPECT_EQ(static_cast<Ultrasonic1611 *>(pd)->ID,
+            Ultrasonic1611::ID);
+}
+
+TEST_F(ChMessageManagerTest, Ultrasonic2612) {
+  ChMessageManager manager;
+  ProtocolData<ChassisDetail> *pd =
+      manager.GetMutableProtocolDataById(Ultrasonic2612::ID);
+  EXPECT_NE(pd, nullptr);
+  EXPECT_EQ(static_cast<Ultrasonic2612 *>(pd)->ID,
+            Ultrasonic2612::ID);
 }
 
 }  // namespace ch

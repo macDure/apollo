@@ -2,7 +2,127 @@ syntax = "proto2";
 
 package apollo.canbus;
 
-// Coolhigh vehicle starts from here
+message Ultrasonic_cmd_601 {
+// Control Message
+  enum Vcu_probecmd_num5Type {
+    VCU_PROBECMD_NUM5_OFF = 0;
+    VCU_PROBECMD_NUM5_ON = 1;
+  }
+  enum Vcu_probecmd_num4Type {
+    VCU_PROBECMD_NUM4_OFF = 0;
+    VCU_PROBECMD_NUM4_ON = 1;
+  }
+  enum Vcu_probecmd_num3Type {
+    VCU_PROBECMD_NUM3_OFF = 0;
+    VCU_PROBECMD_NUM3_ON = 1;
+  }
+  enum Vcu_probecmd_num2Type {
+    VCU_PROBECMD_NUM2_OFF = 0;
+    VCU_PROBECMD_NUM2_ON = 1;
+  }
+  enum Vcu_probecmd_num1Type {
+    VCU_PROBECMD_NUM1_OFF = 0;
+    VCU_PROBECMD_NUM1_ON = 1;
+  }
+  enum Vcu_probecmd_num7Type {
+    VCU_PROBECMD_NUM7_OFF = 0;
+    VCU_PROBECMD_NUM7_ON = 1;
+  }
+  enum Vcu_probecmd_num6Type {
+    VCU_PROBECMD_NUM6_OFF = 0;
+    VCU_PROBECMD_NUM6_ON = 1;
+  }
+  enum Vcu_probecmd_num8Type {
+    VCU_PROBECMD_NUM8_OFF = 0;
+    VCU_PROBECMD_NUM8_ON = 1;
+  }
+  enum Vcu_probecmd_num9Type {
+    VCU_PROBECMD_NUM9_OFF = 0;
+    VCU_PROBECMD_NUM9_ON = 1;
+  }
+  enum Vcu_probecmd_num12Type {
+    VCU_PROBECMD_NUM12_OFF = 0;
+    VCU_PROBECMD_NUM12_ON = 1;
+  }
+  enum Vcu_probecmd_num11Type {
+    VCU_PROBECMD_NUM11_OFF = 0;
+    VCU_PROBECMD_NUM11_ON = 1;
+  }
+  enum Vcu_probecmd_num10Type {
+    VCU_PROBECMD_NUM10_OFF = 0;
+    VCU_PROBECMD_NUM10_ON = 1;
+  }
+  enum Vcu_distance_cmdType {
+    VCU_DISTANCE_CMD_MAX_DISTANCE_CONTINUOUS_B1 = 177;
+    VCU_DISTANCE_CMD_MAX_DISTANCE_TRIGGER_B2 = 178;
+    VCU_DISTANCE_CMD_LONG_DISTANCE_CONTINUOUS_B3 = 179;
+    VCU_DISTANCE_CMD_LONG_DISTANCE_TRIGGER_B4 = 180;
+    VCU_DISTANCE_CMD_GENERAL_DISTANCE_CONTINUOUS_B5 = 181;
+    VCU_DISTANCE_CMD_GENERAL_DISTANCE_TRIGGER_B6 = 182;
+    VCU_DISTANCE_CMD_CLOSE_DISTANCE_CONTINUOUS_B7 = 183;
+    VCU_DISTANCE_CMD_CLOSE_DISTANCE_TRIGGER_B8 = 184;
+    VCU_DISTANCE_CMD_MIN_DISTANCE_CONTINUOUS_B9 = 185;
+    VCU_DISTANCE_CMD_MIN_DISTANCE_TRIGGER_BA = 186;
+    VCU_DISTANCE_CMD_RAINDAY_DISTANCE_CONTINUOUS_BB = 187;
+    VCU_DISTANCE_CMD_RAINDAY_DISTANCE_TRIGGER_BC = 188;
+  }
+  // [] [0|1]
+  optional Vcu_probecmd_num5Type vcu_probecmd_num5 = 1;
+  // [] [0|1]
+  optional Vcu_probecmd_num4Type vcu_probecmd_num4 = 2;
+  // [] [0|1]
+  optional Vcu_probecmd_num3Type vcu_probecmd_num3 = 3;
+  // [] [0|1]
+  optional Vcu_probecmd_num2Type vcu_probecmd_num2 = 4;
+  // [] [0|1]
+  optional Vcu_probecmd_num1Type vcu_probecmd_num1 = 5;
+  // [] [0|1]
+  optional Vcu_probecmd_num7Type vcu_probecmd_num7 = 6;
+  // [] [0|1]
+  optional Vcu_probecmd_num6Type vcu_probecmd_num6 = 7;
+  // [] [0|1]
+  optional Vcu_probecmd_num8Type vcu_probecmd_num8 = 8;
+  // [] [0|1]
+  optional Vcu_probecmd_num9Type vcu_probecmd_num9 = 9;
+  // [] [0|1]
+  optional Vcu_probecmd_num12Type vcu_probecmd_num12 = 10;
+  // [] [0|1]
+  optional Vcu_probecmd_num11Type vcu_probecmd_num11 = 11;
+  // [] [0|1]
+  optional Vcu_probecmd_num10Type vcu_probecmd_num10 = 12;
+  // [] [0|15]
+  optional int32 vcu_machine_num = 13;
+  // [] [0|255]
+  optional Vcu_distance_cmdType vcu_distance_cmd = 14;
+
+  optional int32 vcu_ultrasonic_data_8 = 15;
+
+}
+
+message Ultrasonic2_612 {
+// Report Message
+  // Ultrasonic8 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info8 = 1;
+  // Ultrasonic7 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info7 = 2;
+  // Ultrasonic6 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info6 = 3;
+  // Ultrasonic5 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info5 = 4;
+}
+
+message Ultrasonic1_611 {
+// Report Message
+  // Ultrasonic4 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info4 = 1;
+  // Ultrasonic3 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info3 = 2;
+  // Ultrasonic2 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info2 = 3;
+  // Ultrasonic1 detection distance [mm] [0|65535]
+  optional int32 ult_probe_info1 = 4;
+}
+
 message Control_command_115 {
 // Control Message
   enum Ctrl_cmdType {
@@ -99,7 +219,7 @@ message Brake_status__511 {
     OVERSPD_ENV_NOENV = 0;
     OVERSPD_ENV_OVERSPEED_ENV = 1;
   }
-  // brake pedal enable bit(Status) [] [0|1]
+  // brake pedal enable bit(Status) [] [0|3]
   optional Brake_pedal_en_stsType brake_pedal_en_sts = 1;
   // Percentage of brake pedal(Status) [%] [0|100]
   optional int32 brake_pedal_sts = 2;
@@ -130,7 +250,7 @@ message Throttle_status__510 {
     BATTERY_BMS_ERR_NOERR = 0;
     BATTERY_BMS_ERR_BATTERY_ERR = 1;
   }
-  // throttle pedal enable bit(Status) [] [0|1]
+  // throttle pedal enable bit(Status) [] [0|2]
   optional Throttle_pedal_en_stsType throttle_pedal_en_sts = 1;
   // Percentage of throttle pedal(Status) [%] [0|100]
   optional int32 throttle_pedal_sts = 2;
@@ -166,7 +286,7 @@ message Steer_status__512 {
     SENSOR_ERR_NOERR = 0;
     SENSOR_ERR_STEER_SENSOR_ERR = 1;
   }
-  // steering angle enable bit(Status) [] [0|1]
+  // steering angle enable bit(Status) [] [0|2]
   optional Steer_angle_en_stsType steer_angle_en_sts = 1;
   // Current steering angle(Status) [radian] [-0.524|0.524]
   optional double steer_angle_sts = 2;
@@ -208,22 +328,22 @@ message Gear_status_514 {
 
 message Ecu_status_3_517 {
 // Report Message
-  // Ultrasonic detection distance 1 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_1 = 1;
-  // Ultrasonic detection distance 2 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_2 = 2;
-  // Ultrasonic detection distance 3 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_3 = 3;
-  // Ultrasonic detection distance 4 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_4 = 4;
-  // Ultrasonic detection distance 5 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_5 = 5;
-  // Ultrasonic detection distance 6 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_6 = 6;
-  // Ultrasonic detection distance 7 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_7 = 7;
-  // Ultrasonic detection distance 8 (Ultrasound status) [cm] [0|0]
-  optional int32 ultrasound_dist_8 = 8;
+  // Ultrasonic detection distance 1 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_1 = 1;
+  // Ultrasonic detection distance 2 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_2 = 2;
+  // Ultrasonic detection distance 3 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_3 = 3;
+  // Ultrasonic detection distance 4 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_4 = 4;
+  // Ultrasonic detection distance 5 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_5 = 5;
+  // Ultrasonic detection distance 6 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_6 = 6;
+  // Ultrasonic detection distance 7 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_7 = 7;
+  // Ultrasonic detection distance 8 (Ultrasound status) [cm] [0|500]
+  optional double ultrasound_dist_8 = 8;
 }
 
 message Ecu_status_2_516 {
@@ -239,18 +359,21 @@ message Ecu_status_2_516 {
 }
 
 message Ch {
-  optional Control_command_115 control_command_115 = 1; // control message
-  optional Gear_command_114 gear_command_114 = 2; // control message
-  optional Brake_command_111 brake_command_111 = 3; // control message
-  optional Throttle_command_110 throttle_command_110 = 4; // control message
-  optional Turnsignal_command_113 turnsignal_command_113 = 5; // control message
-  optional Steer_command_112 steer_command_112 = 6; // control message
-  optional Brake_status__511 brake_status__511 = 7; // report message
-  optional Throttle_status__510 throttle_status__510 = 8; // report message
-  optional Turnsignal_status__513 turnsignal_status__513 = 9; // report message
-  optional Steer_status__512 steer_status__512 = 10; // report message
-  optional Ecu_status_1_515 ecu_status_1_515 = 11; // report message
-  optional Gear_status_514 gear_status_514 = 12; // report message
-  optional Ecu_status_3_517 ecu_status_3_517 = 13; // report message
-  optional Ecu_status_2_516 ecu_status_2_516 = 14; // report message
+  optional Ultrasonic_cmd_601 ultrasonic_cmd_601 = 1; // control message
+  optional Ultrasonic2_612 ultrasonic2_612 = 2; // report message
+  optional Ultrasonic1_611 ultrasonic1_611 = 3; // report message
+  optional Control_command_115 control_command_115 = 4; // control message
+  optional Gear_command_114 gear_command_114 = 5; // control message
+  optional Brake_command_111 brake_command_111 = 6; // control message
+  optional Throttle_command_110 throttle_command_110 = 7; // control message
+  optional Turnsignal_command_113 turnsignal_command_113 = 8; // control message
+  optional Steer_command_112 steer_command_112 = 9; // control message
+  optional Brake_status__511 brake_status__511 = 10; // report message
+  optional Throttle_status__510 throttle_status__510 = 11; // report message
+  optional Turnsignal_status__513 turnsignal_status__513 = 12; // report message
+  optional Steer_status__512 steer_status__512 = 13; // report message
+  optional Ecu_status_1_515 ecu_status_1_515 = 14; // report message
+  optional Gear_status_514 gear_status_514 = 15; // report message
+  optional Ecu_status_3_517 ecu_status_3_517 = 16; // report message
+  optional Ecu_status_2_516 ecu_status_2_516 = 17; // report message
 }

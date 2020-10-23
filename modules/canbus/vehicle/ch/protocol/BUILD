@@ -19,6 +19,9 @@ cc_library(
         ":throttle_status__510",
         ":turnsignal_command_113",
         ":turnsignal_status__513",
+        ":ultrasonic_cmd_601",
+        ":ultrasonic1_611",
+        ":ultrasonic2_612",
     ],
 )
 
@@ -324,6 +327,62 @@ cc_test(
     name = "turnsignal_status__513_test",
     size = "small",
     srcs = ["turnsignal_status__513_test.cc"],
+    deps = [
+        "//modules/canbus/vehicle/ch/protocol:canbus_ch_protocol",
+        "@gtest//:main",
+    ],
+)
+
+cc_library(
+    name = "ultrasonic_cmd_601",
+    srcs = ["ultrasonic_cmd_601.cc"],
+    hdrs = ["ultrasonic_cmd_601.h"],
+    copts = ["-DMODULE_NAME=\\\"canbus\\\""],
+    deps = [
+        "//modules/canbus/proto:canbus_proto",
+        "//modules/drivers/canbus/can_comm:message_manager_base",
+        "//modules/drivers/canbus/common:canbus_common",
+    ],
+)
+
+cc_library(
+    name = "ultrasonic1_611",
+    srcs = ["ultrasonic1_611.cc"],
+    hdrs = ["ultrasonic1_611.h"],
+    copts = ["-DMODULE_NAME=\\\"canbus\\\""],
+    deps = [
+        "//modules/canbus/proto:canbus_proto",
+        "//modules/drivers/canbus/can_comm:message_manager_base",
+        "//modules/drivers/canbus/common:canbus_common",
+    ],
+)
+
+cc_test(
+    name = "ultrasonic1_611_test",
+    size = "small",
+    srcs = ["ultrasonic1_611_test.cc"],
+    deps = [
+        "//modules/canbus/vehicle/ch/protocol:canbus_ch_protocol",
+        "@gtest//:main",
+    ],
+)
+
+cc_library(
+    name = "ultrasonic2_612",
+    srcs = ["ultrasonic2_612.cc"],
+    hdrs = ["ultrasonic2_612.h"],
+    copts = ["-DMODULE_NAME=\\\"canbus\\\""],
+    deps = [
+        "//modules/canbus/proto:canbus_proto",
+        "//modules/drivers/canbus/can_comm:message_manager_base",
+        "//modules/drivers/canbus/common:canbus_common",
+    ],
+)
+
+cc_test(
+    name = "ultrasonic2_612_test",
+    size = "small",
+    srcs = ["ultrasonic2_612_test.cc"],
     deps = [
         "//modules/canbus/vehicle/ch/protocol:canbus_ch_protocol",
         "@gtest//:main",

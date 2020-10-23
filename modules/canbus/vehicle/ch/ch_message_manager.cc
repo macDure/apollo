@@ -29,6 +29,9 @@
 #include "modules/canbus/vehicle/ch/protocol/throttle_status__510.h"
 #include "modules/canbus/vehicle/ch/protocol/turnsignal_command_113.h"
 #include "modules/canbus/vehicle/ch/protocol/turnsignal_status__513.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic_cmd_601.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic1_611.h"
+#include "modules/canbus/vehicle/ch/protocol/ultrasonic2_612.h"
 
 namespace apollo {
 namespace canbus {
@@ -42,6 +45,7 @@ ChMessageManager::ChMessageManager() {
   AddSendProtocolData<Steercommand112, true>();
   AddSendProtocolData<Throttlecommand110, true>();
   AddSendProtocolData<Turnsignalcommand113, true>();
+  AddSendProtocolData<Ultrasoniccmd601, true>();
 
   // Report Messages
   AddRecvProtocolData<Brakestatus511, true>();
@@ -52,6 +56,8 @@ ChMessageManager::ChMessageManager() {
   AddRecvProtocolData<Steerstatus512, true>();
   AddRecvProtocolData<Throttlestatus510, true>();
   AddRecvProtocolData<Turnsignalstatus513, true>();
+  AddRecvProtocolData<Ultrasonic1611, true>();
+  AddRecvProtocolData<Ultrasonic2612, true>();
 }
 
 ChMessageManager::~ChMessageManager() {}
