@@ -24,6 +24,11 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 TARGET_ARCH="$(uname -m)"
 
+if [[ "${APOLLO_DIST}" != "stable" ]]; then
+    warning "APOLLO_DIST ${APOLLO_DIST} not supported."
+    exit 0
+fi
+
 VERSION="10.2.89-1"
 MAIN_VER_DOT="${VERSION%.*}"
 DEMO_SUITE_DEST_DIR="/usr/local/cuda-${MAIN_VER_DOT}/extras/demo_suite"
@@ -54,7 +59,7 @@ else
     exit 1
 fi
 
-DOWNLOAD_LINK="https://apollo-platform-system.cdn.bcebos.com/archive/6.0/${DEVICE_QUERY_BINARY}"
+DOWNLOAD_LINK="https://apollo-system.cdn.bcebos.com/archive/6.0/${DEVICE_QUERY_BINARY}"
 download_if_not_cached "${DEVICE_QUERY_BINARY}" "${CHECKSUM}" "${DOWNLOAD_LINK}"
 
 [[ -d "${DEMO_SUITE_DEST_DIR}" ]] || mkdir -p "${DEMO_SUITE_DEST_DIR}"
