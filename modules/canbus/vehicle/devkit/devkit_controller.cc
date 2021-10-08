@@ -105,11 +105,21 @@ ErrorCode DevkitController::Init(
     return ErrorCode::CANBUS_ERROR;
   }
 
+  vehicle_mode_command_105_ = dynamic_cast<Vehiclemodecommand105*>(
+      message_manager_->GetMutableProtocolDataById(Vehiclemodecommand105::ID));
+  if (vehicle_mode_command_105_ == nullptr) {
+    AERROR
+        << "Vehiclemodecommand105 does not exist in the DevkitMessageManager!";
+    return ErrorCode::CANBUS_ERROR;
+  }
+
   can_sender_->AddMessage(Brakecommand101::ID, brake_command_101_, false);
   can_sender_->AddMessage(Gearcommand103::ID, gear_command_103_, false);
   can_sender_->AddMessage(Parkcommand104::ID, park_command_104_, false);
   can_sender_->AddMessage(Steeringcommand102::ID, steering_command_102_, false);
   can_sender_->AddMessage(Throttlecommand100::ID, throttle_command_100_, false);
+  can_sender_->AddMessage(Vehiclemodecommand105::ID, vehicle_mode_command_105_,
+                          false);
 
   // need sleep to ensure all messages received
   AINFO << "DevkitController is initialized.";
@@ -270,6 +280,38 @@ Chassis DevkitController::chassis() {
     chassis_.set_battery_soc_percentage(0);
   }
 
+  // 15 vin
+  if (chassis_detail.devkit().has_vin_resp1_514() &&
+      chassis_detail.devkit().has_vin_resp2_515() &&
+      chassis_detail.devkit().has_vin_resp3_516()) {
+    Vin_resp1_514 vin_resp1_514 = chassis_detail.devkit().vin_resp1_514();
+    Vin_resp2_515 vin_resp2_515 = chassis_detail.devkit().vin_resp2_515();
+    Vin_resp3_516 vin_resp3_516 = chassis_detail.devkit().vin_resp3_516();
+    int n[17];
+    n[0] = vin_resp1_514.vin00();
+    n[1] = vin_resp1_514.vin01();
+    n[2] = vin_resp1_514.vin02();
+    n[3] = vin_resp1_514.vin03();
+    n[4] = vin_resp1_514.vin04();
+    n[5] = vin_resp1_514.vin05();
+    n[6] = vin_resp1_514.vin06();
+    n[7] = vin_resp1_514.vin07();
+    n[8] = vin_resp2_515.vin08();
+    n[9] = vin_resp2_515.vin09();
+    n[10] = vin_resp2_515.vin10();
+    n[11] = vin_resp2_515.vin11();
+    n[12] = vin_resp2_515.vin12();
+    n[13] = vin_resp2_515.vin13();
+    n[14] = vin_resp2_515.vin14();
+    n[15] = vin_resp2_515.vin15();
+    n[16] = vin_resp3_516.vin16();
+    char vin[17];
+    memset(&vin, '\0', sizeof(vin));
+    for (int i = 0; i < 17; i++) {
+      vin[i] = static_cast<char>(n[i]);
+      chassis_.mutable_vehicle_id()->set_vin(vin);
+    }
+  }
   return chassis_;
 }
 
@@ -403,8 +445,9 @@ void DevkitController::Throttle(double pedal) {
   throttle_command_100_->set_throttle_pedal_target(pedal);
 }
 
-// confirm the car is driven by acceleration command instead of throttle/brake
-// pedal drive with acceleration/deceleration acc:-7.0 ~ 5.0, unit:m/s^2
+// confirm the car is driven by acceleration command instead of
+// throttle/brake pedal drive with acceleration/deceleration acc:-7.0 ~ 5.0,
+// unit:m/s^2
 void DevkitController::Acceleration(double acc) {
   if (driving_mode() != Chassis::COMPLETE_AUTO_DRIVE ||
       driving_mode() != Chassis::AUTO_SPEED_ONLY) {
@@ -417,7 +460,7 @@ void DevkitController::Acceleration(double acc) {
 // devkit default, -30 ~ 00, left:+, right:-
 // need to be compatible with control module, so reverse
 // steering with default angle speed, 25-250 (default:250)
-// angle:-99.99~0.00~99.99, unit:, left:-, right:+
+// angle:-99.99~0.00~99.99, unit:, left:+, right:-
 void DevkitController::Steer(double angle) {
   if (driving_mode() != Chassis::COMPLETE_AUTO_DRIVE &&
       driving_mode() != Chassis::AUTO_STEER_ONLY) {
@@ -431,7 +474,7 @@ void DevkitController::Steer(double angle) {
 }
 
 // steering with new angle speed
-// angle:-99.99~0.00~99.99, unit:, left:-, right:+
+// angle:-99.99~0.00~99.99, unit:, left:+, right:-
 // angle_spd:25~250, unit:deg/s
 void DevkitController::Steer(double angle, double angle_spd) {
   if (driving_mode() != Chassis::COMPLETE_AUTO_DRIVE &&
@@ -447,9 +490,10 @@ void DevkitController::Steer(double angle, double angle_spd) {
 
 void DevkitController::SetEpbBreak(const ControlCommand& command) {
   if (command.parking_brake()) {
-    // None
+    park_command_104_->set_park_target(
+        Park_command_104::PARK_TARGET_PARKING_TRIGGER);
   } else {
-    // None
+    park_command_104_->set_park_target(Park_command_104::PARK_TARGET_RELEASE);
   }
 }
 
@@ -472,7 +516,18 @@ void DevkitController::SetHorn(const ControlCommand& command) {
 }
 
 void DevkitController::SetTurningSignal(const ControlCommand& command) {
-  // Set Turn Signal do not support on devkit
+  // Set Turn Signal
+  auto signal = command.signal().turn_signal();
+  if (signal == common::VehicleSignal::TURN_LEFT) {
+    vehicle_mode_command_105_->set_turn_light_ctrl(
+        Vehicle_mode_command_105::TURN_LIGHT_CTRL_LEFT_TURNLAMP_ON);
+  } else if (signal == common::VehicleSignal::TURN_RIGHT) {
+    vehicle_mode_command_105_->set_turn_light_ctrl(
+        Vehicle_mode_command_105::TURN_LIGHT_CTRL_RIGHT_TURNLAMP_ON);
+  } else {
+    vehicle_mode_command_105_->set_turn_light_ctrl(
+        Vehicle_mode_command_105::TURN_LIGHT_CTRL_TURNLAMP_OFF);
+  }
 }
 
 void DevkitController::ResetProtocol() {
@@ -575,7 +630,8 @@ void DevkitController::SecurityDogThreadFunc() {
     if (elapsed < default_period) {
       std::this_thread::sleep_for(default_period - elapsed);
     } else {
-      AERROR << "Too much time consumption in DevkitController looping process:"
+      AERROR << "Too much time consumption in DevkitController looping "
+                "process:"
              << elapsed.count();
     }
   }

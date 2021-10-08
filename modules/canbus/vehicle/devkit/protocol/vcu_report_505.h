@@ -32,6 +32,48 @@ class Vcureport505 : public ::apollo::drivers::canbus::ProtocolData<
              ChassisDetail* chassis) const override;
 
  private:
+  // config detail: {'bit': 11, 'enum': {0: 'BRAKE_LIGHT_ACTUAL_BRAKELIGHT_OFF',
+  // 1: 'BRAKE_LIGHT_ACTUAL_BRAKELIGHT_ON'}, 'is_signed_var': False, 'len': 1,
+  // 'name': 'Brake_Light_Actual', 'offset': 0.0, 'order': 'motorola',
+  // 'physical_range': '[0|1]', 'physical_unit': '', 'precision': 1.0, 'type':
+  // 'enum'}
+  Vcu_report_505::Brake_light_actualType brake_light_actual(
+      const std::uint8_t* bytes, const int32_t length) const;
+
+  // config detail: {'bit': 57, 'enum': {0: 'TURN_LIGHT_ACTUAL_TURNLAMPSTS_OFF',
+  // 1: 'TURN_LIGHT_ACTUAL_LEFT_TURNLAMPSTS_ON', 2:
+  // 'TURN_LIGHT_ACTUAL_RIGHT_TURNLAMPSTS_ON', 3:
+  // 'TURN_LIGHT_ACTUAL_HAZARD_WARNING_LAMPSTS_ON'}, 'is_signed_var': False,
+  // 'len': 2, 'name': 'Turn_Light_Actual', 'offset': 0.0, 'order': 'motorola',
+  // 'physical_range': '[0|0]', 'physical_unit': '', 'precision': 1.0, 'type':
+  // 'enum'}
+  Vcu_report_505::Turn_light_actualType turn_light_actual(
+      const std::uint8_t* bytes, const int32_t length) const;
+
+  // config detail: {'bit': 47, 'is_signed_var': False, 'len': 8, 'name':
+  // 'Chassis_errcode', 'offset': 0.0, 'order': 'motorola', 'physical_range':
+  // '[0|255]', 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
+  int chassis_errcode(const std::uint8_t* bytes, const int32_t length) const;
+
+  // config detail: {'bit': 39, 'enum': {0:
+  // 'DRIVE_MODE_STS_THROTTLE_PADDLE_DRIVE_MODE', 1:
+  // 'DRIVE_MODE_STS_SPEED_DRIVE_MODE'}, 'is_signed_var': False, 'len': 3,
+  // 'name': 'Drive_Mode_STS', 'offset': 0.0, 'order': 'motorola',
+  // 'physical_range': '[0|7]', 'physical_unit': '', 'precision': 1.0, 'type':
+  // 'enum'}
+  Vcu_report_505::Drive_mode_stsType drive_mode_sts(const std::uint8_t* bytes,
+                                                    const int32_t length) const;
+
+  // config detail: {'bit': 10, 'enum': {0:
+  // 'STEER_MODE_STS_STANDARD_STEER_MODE', 1:
+  // 'STEER_MODE_STS_NON_DIRECTION_STEER_MODE', 2:
+  // 'STEER_MODE_STS_SYNC_DIRECTION_STEER_MODE'}, 'is_signed_var': False, 'len':
+  // 3, 'name': 'Steer_Mode_STS', 'offset': 0.0, 'order': 'motorola',
+  // 'physical_range': '[0|7]', 'physical_unit': '', 'precision': 1.0, 'type':
+  // 'enum'}
+  Vcu_report_505::Steer_mode_stsType steer_mode_sts(const std::uint8_t* bytes,
+                                                    const int32_t length) const;
+
   // config detail: {'bit': 36, 'enum': {0:
   // 'VEHICLE_MODE_STATE_MANUAL_REMOTE_MODE', 1: 'VEHICLE_MODE_STATE_AUTO_MODE',
   // 2: 'VEHICLE_MODE_STATE_EMERGENCY_MODE', 3:
@@ -68,9 +110,10 @@ class Vcureport505 : public ::apollo::drivers::canbus::ProtocolData<
   // 'physical_unit': 'm/s^2', 'precision': 0.01, 'type': 'double'}
   double acc(const std::uint8_t* bytes, const int32_t length) const;
 
-  // config detail: {'bit': 23, 'is_signed_var': False, 'len': 16, 'name':
+  // config detail: {'bit': 23, 'is_signed_var': True, 'len': 16, 'name':
   // 'SPEED', 'offset': 0.0, 'order': 'motorola', 'physical_range':
-  // '[0|65.535]', 'physical_unit': 'm/s', 'precision': 0.001, 'type': 'double'}
+  // '[-32.768|32.767]', 'physical_unit': 'm/s', 'precision': 0.001, 'type':
+  // 'double'}
   double speed(const std::uint8_t* bytes, const int32_t length) const;
 };
 

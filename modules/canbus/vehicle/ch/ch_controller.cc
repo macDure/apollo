@@ -380,7 +380,7 @@ void ChController::Acceleration(double acc) {}
 // ch default, -23 ~ 23, left:+, right:-
 // need to be compatible with control module, so reverse
 // steering with old angle speed
-// angle:-99.99~0.00~99.99, unit:, left:-, right:+
+// angle:-99.99~0.00~99.99, unit:, left:+, right:-
 void ChController::Steer(double angle) {
   if (!(driving_mode() == Chassis::COMPLETE_AUTO_DRIVE ||
         driving_mode() == Chassis::AUTO_STEER_ONLY)) {
