@@ -395,8 +395,10 @@ message Bms_report_512 {
   optional double battery_current = 1;
   // Battery Total Voltage [V] [0|300]
   optional double battery_voltage = 2;
-  // Battery Soc percentage [%] [0|100]
-  optional int32 battery_soc = 3;
+  // Battery State of Charge percentage [%] [0|100]
+  optional int32 battery_soc_percentage = 3;
+  // Battery Low Soc Warn
+  optional bool is_battery_soc_low = 4;
 }
 
 message Vin_resp1_514 {

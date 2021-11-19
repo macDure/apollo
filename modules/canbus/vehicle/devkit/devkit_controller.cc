@@ -113,11 +113,11 @@ ErrorCode DevkitController::Init(
     return ErrorCode::CANBUS_ERROR;
   }
 
+  can_sender_->AddMessage(Throttlecommand100::ID, throttle_command_100_, false);
   can_sender_->AddMessage(Brakecommand101::ID, brake_command_101_, false);
   can_sender_->AddMessage(Gearcommand103::ID, gear_command_103_, false);
   can_sender_->AddMessage(Parkcommand104::ID, park_command_104_, false);
   can_sender_->AddMessage(Steeringcommand102::ID, steering_command_102_, false);
-  can_sender_->AddMessage(Throttlecommand100::ID, throttle_command_100_, false);
   can_sender_->AddMessage(Vehiclemodecommand105::ID, vehicle_mode_command_105_,
                           false);
 
@@ -194,8 +194,8 @@ Chassis DevkitController::chassis() {
   // 6 speed_mps
   if (chassis_detail.devkit().has_vcu_report_505() &&
       chassis_detail.devkit().vcu_report_505().has_speed()) {
-    chassis_.set_speed_mps(
-        static_cast<float>(abs(chassis_detail.devkit().vcu_report_505().speed())));
+    chassis_.set_speed_mps(static_cast<float>(
+        abs(chassis_detail.devkit().vcu_report_505().speed())));
   } else {
     chassis_.set_speed_mps(0);
   }
@@ -273,20 +273,28 @@ Chassis DevkitController::chassis() {
   }
   // 14 battery soc
   if (chassis_detail.devkit().has_bms_report_512() &&
-      chassis_detail.devkit().bms_report_512().has_battery_soc()) {
+      chassis_detail.devkit().bms_report_512().has_battery_soc_percentage()) {
     chassis_.set_battery_soc_percentage(
-        chassis_detail.devkit().bms_report_512().battery_soc());
+        chassis_detail.devkit().bms_report_512().battery_soc_percentage());
   } else {
     chassis_.set_battery_soc_percentage(0);
   }
-
-  if (chassis_detail.devkit().has_ultr_sensor_3_509() && chassis_detail.devkit().has_ultr_sensor_5_511()) {
-    chassis_.mutable_surround()->set_sonar01(chassis_detail.devkit().ultr_sensor_5_511().uiuss1_tof_direct());
+  // 15 battery low soc warn
+  if (chassis_.battery_soc_percentage() < 15) {
+    chassis_.mutable_engage_advice()->set_reason(
+        "Battery soc percentage is lower than 15%, please charge it "
+        "quickly!");
+  }
+  // 16
+  if (chassis_detail.devkit().has_ultr_sensor_3_509() &&
+      chassis_detail.devkit().has_ultr_sensor_5_511()) {
+    chassis_.mutable_surround()->set_sonar01(
+        chassis_detail.devkit().ultr_sensor_5_511().uiuss1_tof_direct());
   } else {
     chassis_.mutable_surround()->set_sonar01(0);
   }
 
-  // 15 vin
+  // 17 set vin
   if (chassis_detail.devkit().has_vin_resp1_514() &&
       chassis_detail.devkit().has_vin_resp2_515() &&
       chassis_detail.devkit().has_vin_resp3_516()) {
@@ -573,6 +581,12 @@ bool DevkitController::CheckChassisError() {
       return true;
     }
   }
+  // brake fault
+  if (devkit.has_bms_report_512()) {
+    if (devkit.bms_report_512().is_battery_soc_low()) {
+      return true;
+    }
+  }
 
   return false;
 }
@@ -597,6 +611,7 @@ void DevkitController::SecurityDogThreadFunc() {
     start = ::apollo::cyber::Time::Now().ToMicrosecond();
     const Chassis::DrivingMode mode = driving_mode();
     bool emergency_mode = false;
+    bool emergency_brake = false;
 
     // 1. horizontal control check
     if ((mode == Chassis::COMPLETE_AUTO_DRIVE ||
@@ -626,10 +641,20 @@ void DevkitController::SecurityDogThreadFunc() {
     if (CheckChassisError()) {
       set_chassis_error_code(Chassis::CHASSIS_ERROR);
       emergency_mode = true;
+      if (chassis_.speed_mps() > 0.3) {
+        emergency_brake = true;
+      }
     }
 
     if (emergency_mode && mode != Chassis::EMERGENCY_MODE) {
       set_driving_mode(Chassis::EMERGENCY_MODE);
+      if (emergency_brake) {
+        throttle_command_100_->set_throttle_pedal_target(0);
+        brake_command_101_->set_brake_pedal_target(50);
+        steering_command_102_->set_steer_angle_target(0);
+        std::this_thread::sleep_for(
+            std::chrono::duration<double, std::milli>(3000));
+      }
       message_manager_->ResetSendMessages();
     }
     end = ::apollo::cyber::Time::Now().ToMicrosecond();
