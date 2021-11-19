@@ -25,9 +25,6 @@
 
 #include "modules/canbus/vehicle/devkit/protocol/bms_report_512.h"
 #include "modules/canbus/vehicle/devkit/protocol/brake_report_501.h"
-// #include "modules/canbus/vehicle/devkit/protocol/chassiserrorcode_1_201.h"
-// #include "modules/canbus/vehicle/devkit/protocol/chassiserrorcode_200.h"
-// #include "modules/canbus/vehicle/devkit/protocol/chassiserrorcode_2_202.h"
 #include "modules/canbus/vehicle/devkit/protocol/gear_report_503.h"
 #include "modules/canbus/vehicle/devkit/protocol/park_report_504.h"
 #include "modules/canbus/vehicle/devkit/protocol/steering_report_502.h"
@@ -59,9 +56,6 @@ DevkitMessageManager::DevkitMessageManager() {
   // Report Messages
   AddRecvProtocolData<Bmsreport512, true>();
   AddRecvProtocolData<Brakereport501, true>();
-  // AddRecvProtocolData<Chassiserrorcode1201, true>();
-  // AddRecvProtocolData<Chassiserrorcode200, true>();
-  // AddRecvProtocolData<Chassiserrorcode2202, true>();
   AddRecvProtocolData<Gearreport503, true>();
   AddRecvProtocolData<Parkreport504, true>();
   AddRecvProtocolData<Steeringreport502, true>();

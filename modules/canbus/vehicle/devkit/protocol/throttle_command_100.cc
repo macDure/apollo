@@ -69,7 +69,7 @@ void Throttlecommand100::set_p_speed_target(uint8_t* data,
 
   t = x & 0x3;
   Byte to_set0(data + 6);
-  to_set0.set_value(t, 6, 2);
+  to_set0.set_value(t, 6, 4);
   x >>= 2;
 
   t = x & 0xFF;

@@ -31,6 +31,8 @@ const int32_t Vcureport505::ID = 0x505;
 
 void Vcureport505::Parse(const std::uint8_t* bytes, int32_t length,
                          ChassisDetail* chassis) const {
+  chassis->mutable_devkit()->mutable_vcu_report_505()->set_aeb_mode(
+      aeb_mode(bytes, length));
   chassis->mutable_devkit()->mutable_vcu_report_505()->set_brake_light_actual(
       brake_light_actual(bytes, length));
   chassis->mutable_devkit()->mutable_vcu_report_505()->set_turn_light_actual(
@@ -47,12 +49,27 @@ void Vcureport505::Parse(const std::uint8_t* bytes, int32_t length,
       frontcrash_state(bytes, length));
   chassis->mutable_devkit()->mutable_vcu_report_505()->set_backcrash_state(
       backcrash_state(bytes, length));
-  chassis->mutable_devkit()->mutable_vcu_report_505()->set_aeb_state(
-      aeb_state(bytes, length));
+  chassis->mutable_devkit()->mutable_vcu_report_505()->set_aeb_brake_state(
+      aeb_brake_state(bytes, length));
   chassis->mutable_devkit()->mutable_vcu_report_505()->set_acc(
       acc(bytes, length));
   chassis->mutable_devkit()->mutable_vcu_report_505()->set_speed(
       speed(bytes, length));
+}
+
+// config detail: {'bit': 58, 'description': 'describe the vehicle e-brake
+// command whether was triggered by AEB', 'enum': {0: 'AEB_MODE_DISABLE', 1:
+// 'AEB_MODE_ENABLE'}, 'is_signed_var': False, 'len': 1, 'name': 'aeb_mode',
+// 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|1]',
+// 'physical_unit': '', 'precision': 1.0, 'type': 'enum'}
+Vcu_report_505::Aeb_modeType Vcureport505::aeb_mode(const std::uint8_t* bytes,
+                                                    int32_t length) const {
+  Byte t0(bytes + 7);
+  int32_t x = t0.get_byte(2, 1);
+
+  Vcu_report_505::Aeb_modeType ret =
+      static_cast<Vcu_report_505::Aeb_modeType>(x);
+  return ret;
 }
 
 // config detail: {'bit': 11, 'enum': {0: 'BRAKE_LIGHT_ACTUAL_BRAKELIGHT_OFF',
@@ -174,17 +191,18 @@ Vcu_report_505::Backcrash_stateType Vcureport505::backcrash_state(
   return ret;
 }
 
-// config detail: {'bit': 32, 'enum': {0: 'AEB_STATE_INACTIVE', 1:
-// 'AEB_STATE_ACTIVE'}, 'is_signed_var': False, 'len': 1, 'name': 'aeb_state',
-// 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|0]',
-// 'physical_unit': '', 'precision': 1.0, 'type': 'enum'}
-Vcu_report_505::Aeb_stateType Vcureport505::aeb_state(const std::uint8_t* bytes,
-                                                      int32_t length) const {
+// config detail: {'bit': 32, 'description': 'describle the vehicle AEB mode
+// whether was set', 'enum': {0: 'AEB_BRAKE_STATE_INACTIVE', 1:
+// 'AEB_BRAKE_STATE_ACTIVE'}, 'is_signed_var': False, 'len': 1, 'name':
+// 'aeb_brake_state', 'offset': 0.0, 'order': 'motorola', 'physical_range':
+// '[0|0]', 'physical_unit': '', 'precision': 1.0, 'type': 'enum'}
+Vcu_report_505::Aeb_brake_stateType Vcureport505::aeb_brake_state(
+    const std::uint8_t* bytes, int32_t length) const {
   Byte t0(bytes + 4);
   int32_t x = t0.get_byte(0, 1);
 
-  Vcu_report_505::Aeb_stateType ret =
-      static_cast<Vcu_report_505::Aeb_stateType>(x);
+  Vcu_report_505::Aeb_brake_stateType ret =
+      static_cast<Vcu_report_505::Aeb_brake_stateType>(x);
   return ret;
 }
 
@@ -218,6 +236,9 @@ double Vcureport505::speed(const std::uint8_t* bytes, int32_t length) const {
   int32_t t = t1.get_byte(0, 8);
   x <<= 8;
   x |= t;
+
+  x <<= 16;
+  x >>= 16;
 
   double ret = x * 0.001000;
   return ret;

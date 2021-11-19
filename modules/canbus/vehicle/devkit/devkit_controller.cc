@@ -195,7 +195,7 @@ Chassis DevkitController::chassis() {
   if (chassis_detail.devkit().has_vcu_report_505() &&
       chassis_detail.devkit().vcu_report_505().has_speed()) {
     chassis_.set_speed_mps(
-        static_cast<float>(chassis_detail.devkit().vcu_report_505().speed()));
+        static_cast<float>(abs(chassis_detail.devkit().vcu_report_505().speed())));
   } else {
     chassis_.set_speed_mps(0);
   }
@@ -280,6 +280,12 @@ Chassis DevkitController::chassis() {
     chassis_.set_battery_soc_percentage(0);
   }
 
+  if (chassis_detail.devkit().has_ultr_sensor_3_509() && chassis_detail.devkit().has_ultr_sensor_5_511()) {
+    chassis_.mutable_surround()->set_sonar01(chassis_detail.devkit().ultr_sensor_5_511().uiuss1_tof_direct());
+  } else {
+    chassis_.mutable_surround()->set_sonar01(0);
+  }
+
   // 15 vin
   if (chassis_detail.devkit().has_vin_resp1_514() &&
       chassis_detail.devkit().has_vin_resp2_515() &&
@@ -287,7 +293,7 @@ Chassis DevkitController::chassis() {
     Vin_resp1_514 vin_resp1_514 = chassis_detail.devkit().vin_resp1_514();
     Vin_resp2_515 vin_resp2_515 = chassis_detail.devkit().vin_resp2_515();
     Vin_resp3_516 vin_resp3_516 = chassis_detail.devkit().vin_resp3_516();
-    int n[17];
+    int n[18];
     n[0] = vin_resp1_514.vin00();
     n[1] = vin_resp1_514.vin01();
     n[2] = vin_resp1_514.vin02();
@@ -305,12 +311,12 @@ Chassis DevkitController::chassis() {
     n[14] = vin_resp2_515.vin14();
     n[15] = vin_resp2_515.vin15();
     n[16] = vin_resp3_516.vin16();
-    char vin[17];
+    char vin[18];
     memset(&vin, '\0', sizeof(vin));
     for (int i = 0; i < 17; i++) {
       vin[i] = static_cast<char>(n[i]);
-      chassis_.mutable_vehicle_id()->set_vin(vin);
     }
+    chassis_.mutable_vehicle_id()->set_vin(vin);
   }
   return chassis_;
 }
@@ -339,6 +345,7 @@ ErrorCode DevkitController::EnableAutoMode() {
   if (FLAGS_enable_aeb) {
     brake_command_101_->set_aeb_en_ctrl(
         Brake_command_101::AEB_EN_CTRL_ENABLE_AEB);
+    AINFO << "Set AEB";
   }
 
   can_sender_->Update();
@@ -435,7 +442,7 @@ void DevkitController::Brake(double pedal) {
 }
 
 // drive with pedal
-// pedal:0.0~99.9 unit:%
+// pedal:0.0~99.9 unit:%s
 void DevkitController::Throttle(double pedal) {
   if (driving_mode() != Chassis::COMPLETE_AUTO_DRIVE &&
       driving_mode() != Chassis::AUTO_SPEED_ONLY) {

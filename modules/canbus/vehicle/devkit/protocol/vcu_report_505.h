@@ -32,6 +32,14 @@ class Vcureport505 : public ::apollo::drivers::canbus::ProtocolData<
              ChassisDetail* chassis) const override;
 
  private:
+  // config detail: {'bit': 58, 'description': 'describe the vehicle e-brake
+  // command whether was triggered by AEB', 'enum': {0: 'AEB_MODE_DISABLE', 1:
+  // 'AEB_MODE_ENABLE'}, 'is_signed_var': False, 'len': 1, 'name': 'AEB_Mode',
+  // 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|1]',
+  // 'physical_unit': '', 'precision': 1.0, 'type': 'enum'}
+  Vcu_report_505::Aeb_modeType aeb_mode(const std::uint8_t* bytes,
+                                        const int32_t length) const;
+
   // config detail: {'bit': 11, 'enum': {0: 'BRAKE_LIGHT_ACTUAL_BRAKELIGHT_OFF',
   // 1: 'BRAKE_LIGHT_ACTUAL_BRAKELIGHT_ON'}, 'is_signed_var': False, 'len': 1,
   // 'name': 'Brake_Light_Actual', 'offset': 0.0, 'order': 'motorola',
@@ -98,12 +106,13 @@ class Vcureport505 : public ::apollo::drivers::canbus::ProtocolData<
   Vcu_report_505::Backcrash_stateType backcrash_state(
       const std::uint8_t* bytes, const int32_t length) const;
 
-  // config detail: {'bit': 32, 'enum': {0: 'AEB_STATE_INACTIVE', 1:
-  // 'AEB_STATE_ACTIVE'}, 'is_signed_var': False, 'len': 1, 'name': 'AEB_State',
-  // 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|0]',
-  // 'physical_unit': '', 'precision': 1.0, 'type': 'enum'}
-  Vcu_report_505::Aeb_stateType aeb_state(const std::uint8_t* bytes,
-                                          const int32_t length) const;
+  // config detail: {'bit': 32, 'description': 'describle the vehicle AEB mode
+  // whether was set', 'enum': {0: 'AEB_BRAKE_STATE_INACTIVE', 1:
+  // 'AEB_BRAKE_STATE_ACTIVE'}, 'is_signed_var': False, 'len': 1, 'name':
+  // 'AEB_Brake_State', 'offset': 0.0, 'order': 'motorola', 'physical_range':
+  // '[0|0]', 'physical_unit': '', 'precision': 1.0, 'type': 'enum'}
+  Vcu_report_505::Aeb_brake_stateType aeb_brake_state(
+      const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 7, 'is_signed_var': True, 'len': 12, 'name': 'ACC',
   // 'offset': 0.0, 'order': 'motorola', 'physical_range': '[-10|10]',
