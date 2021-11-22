@@ -39,6 +39,7 @@ namespace {
 const int32_t kMaxFailAttempt = 10;
 const int32_t CHECK_RESPONSE_STEER_UNIT_FLAG = 1;
 const int32_t CHECK_RESPONSE_SPEED_UNIT_FLAG = 2;
+bool emergency_brake = false;
 }  // namespace
 
 ErrorCode DevkitController::Init(
@@ -446,7 +447,10 @@ void DevkitController::Brake(double pedal) {
     AINFO << "The current drive mode does not need to set brake pedal.";
     return;
   }
-  brake_command_101_->set_brake_pedal_target(pedal);
+  if (!emergency_brake) {
+    brake_command_101_->set_brake_pedal_target(pedal);
+  }
+  // brake_command_101_->set_brake_pedal_target(pedal);
 }
 
 // drive with pedal
@@ -457,7 +461,10 @@ void DevkitController::Throttle(double pedal) {
     AINFO << "The current drive mode does not need to set throttle pedal.";
     return;
   }
-  throttle_command_100_->set_throttle_pedal_target(pedal);
+  if (!emergency_brake) {
+    throttle_command_100_->set_throttle_pedal_target(pedal);
+  }
+  // throttle_command_100_->set_throttle_pedal_target(pedal);
 }
 
 // confirm the car is driven by acceleration command instead of
@@ -484,8 +491,11 @@ void DevkitController::Steer(double angle) {
   }
   const double real_angle =
       vehicle_params_.max_steer_angle() / M_PI * 180 * angle / 100.0;
-  steering_command_102_->set_steer_angle_target(real_angle)
-      ->set_steer_angle_spd(250);
+
+  if (!emergency_brake) {
+    steering_command_102_->set_steer_angle_target(real_angle)
+        ->set_steer_angle_spd(250);
+  }
 }
 
 // steering with new angle speed
@@ -499,8 +509,11 @@ void DevkitController::Steer(double angle, double angle_spd) {
   }
   const double real_angle =
       vehicle_params_.max_steer_angle() / M_PI * 180 * angle / 100.0;
-  steering_command_102_->set_steer_angle_target(real_angle)
-      ->set_steer_angle_spd(250);
+
+  if (!emergency_brake) {
+    steering_command_102_->set_steer_angle_target(real_angle)
+        ->set_steer_angle_spd(250);
+  }
 }
 
 void DevkitController::SetEpbBreak(const ControlCommand& command) {
@@ -611,7 +624,7 @@ void DevkitController::SecurityDogThreadFunc() {
     start = ::apollo::cyber::Time::Now().ToMicrosecond();
     const Chassis::DrivingMode mode = driving_mode();
     bool emergency_mode = false;
-    bool emergency_brake = false;
+    emergency_brake = false;
 
     // 1. horizontal control check
     if ((mode == Chassis::COMPLETE_AUTO_DRIVE ||
@@ -650,12 +663,13 @@ void DevkitController::SecurityDogThreadFunc() {
       set_driving_mode(Chassis::EMERGENCY_MODE);
       if (emergency_brake) {
         throttle_command_100_->set_throttle_pedal_target(0);
-        brake_command_101_->set_brake_pedal_target(50);
+        brake_command_101_->set_brake_pedal_target(40);
         steering_command_102_->set_steer_angle_target(0);
         std::this_thread::sleep_for(
             std::chrono::duration<double, std::milli>(3000));
       }
       message_manager_->ResetSendMessages();
+      emergency_brake = false;
     }
     end = ::apollo::cyber::Time::Now().ToMicrosecond();
     std::chrono::duration<double, std::micro> elapsed{end - start};
