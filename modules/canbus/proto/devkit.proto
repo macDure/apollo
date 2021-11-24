@@ -444,7 +444,9 @@ message Vin_resp2_515 {
 message Vin_resp3_516 {
 // Report Message
   // [] [0|255] TO ASCII
-  optional string vin16 = 1;
+  optional string vin17 = 1;
+  // [] [0|255] TO ASCII
+  optional string vin16 = 2;
 }
 
 message Devkit {

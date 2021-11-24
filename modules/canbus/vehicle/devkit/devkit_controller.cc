@@ -323,6 +323,7 @@ Chassis DevkitController::chassis() {
   if (chassis_detail.devkit().has_vin_resp3_516()) {
     Vin_resp3_516 vin_resp3_516 = chassis_detail.devkit().vin_resp3_516();
     vin += vin_resp3_516.vin16();
+    vin += vin_resp3_516.vin17();
   }
 
   chassis_.mutable_vehicle_id()->set_vin(vin);

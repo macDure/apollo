@@ -31,8 +31,22 @@ const int32_t Vinresp3516::ID = 0x516;
 
 void Vinresp3516::Parse(const std::uint8_t* bytes, int32_t length,
                         ChassisDetail* chassis) const {
+  chassis->mutable_devkit()->mutable_vin_resp3_516()->set_vin17(
+      vin17(bytes, length));
   chassis->mutable_devkit()->mutable_vin_resp3_516()->set_vin16(
       vin16(bytes, length));
+}
+
+// config detail: {'bit': 15, 'is_signed_var': False, 'len': 8, 'name': 'vin17',
+// 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
+// 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
+std::string Vinresp3516::vin17(const std::uint8_t* bytes, int32_t length) const {
+  Byte t0(bytes + 1);
+  int32_t x = t0.get_byte(0, 8);
+
+  std::string ret = "";
+  ret += x;
+  return ret;
 }
 
 // config detail: {'bit': 7, 'is_signed_var': False, 'len': 8, 'name': 'vin16',
