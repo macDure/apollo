@@ -38,11 +38,12 @@ void Vinresp3516::Parse(const std::uint8_t* bytes, int32_t length,
 // config detail: {'bit': 7, 'is_signed_var': False, 'len': 8, 'name': 'vin16',
 // 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
 // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-int Vinresp3516::vin16(const std::uint8_t* bytes, int32_t length) const {
+std::string Vinresp3516::vin16(const std::uint8_t* bytes, int32_t length) const {
   Byte t0(bytes + 0);
   int32_t x = t0.get_byte(0, 8);
 
-  int ret = x;
+  std::string ret = "";
+  ret += x;
   return ret;
 }
 }  // namespace devkit

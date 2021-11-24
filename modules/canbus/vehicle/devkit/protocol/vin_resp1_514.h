@@ -35,42 +35,42 @@ class Vinresp1514 : public ::apollo::drivers::canbus::ProtocolData<
   // config detail: {'bit': 63, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN07', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin07(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin07(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 55, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN06', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin06(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin06(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 47, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN05', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin05(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin05(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 39, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN04', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin04(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin04(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 31, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN03', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin03(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin03(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 23, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN02', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin02(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin02(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 15, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN01', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin01(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin01(const std::uint8_t* bytes, const int32_t length) const;
 
   // config detail: {'bit': 7, 'is_signed_var': False, 'len': 8, 'name':
   // 'VIN00', 'offset': 0.0, 'order': 'motorola', 'physical_range': '[0|255]',
   // 'physical_unit': '', 'precision': 1.0, 'type': 'int'}
-  int vin00(const std::uint8_t* bytes, const int32_t length) const;
+  std::string vin00(const std::uint8_t* bytes, const int32_t length) const;
 };
 
 }  // namespace devkit

@@ -403,48 +403,48 @@ message Bms_report_512 {
 
 message Vin_resp1_514 {
 // Report Message
-  // [] [0|255]
-  optional int32 vin07 = 1;
-  // [] [0|255]
-  optional int32 vin06 = 2;
-  // [] [0|255]
-  optional int32 vin05 = 3;
-  // [] [0|255]
-  optional int32 vin04 = 4;
-  // [] [0|255]
-  optional int32 vin03 = 5;
-  // [] [0|255]
-  optional int32 vin02 = 6;
-  // [] [0|255]
-  optional int32 vin01 = 7;
-  // [] [0|255]
-  optional int32 vin00 = 8;
+  // [] [0|255] TO ASCII
+  optional string vin07 = 1;
+  // [] [0|255] TO ASCII
+  optional string vin06 = 2;
+  // [] [0|255] TO ASCII
+  optional string vin05 = 3;
+  // [] [0|255] TO ASCII
+  optional string vin04 = 4;
+  // [] [0|255] TO ASCII
+  optional string vin03 = 5;
+  // [] [0|255] TO ASCII
+  optional string vin02 = 6;
+  // [] [0|255] TO ASCII
+  optional string vin01 = 7;
+  // [] [0|255] TO ASCII
+  optional string vin00 = 8;
 }
 
 message Vin_resp2_515 {
 // Report Message
-  // [] [0|255]
-  optional int32 vin15 = 1;
-  // [] [0|255]
-  optional int32 vin14 = 2;
-  // [] [0|255]
-  optional int32 vin13 = 3;
-  // [] [0|255]
-  optional int32 vin12 = 4;
-  // [] [0|255]
-  optional int32 vin11 = 5;
-  // [] [0|255]
-  optional int32 vin10 = 6;
-  // [] [0|255]
-  optional int32 vin09 = 7;
-  // [] [0|255]
-  optional int32 vin08 = 8;
+  // [] [0|255] TO ASCII
+  optional string vin15 = 1;
+  // [] [0|255] TO ASCII
+  optional string vin14 = 2;
+  // [] [0|255] TO ASCII
+  optional string vin13 = 3;
+  // [] [0|255] TO ASCII
+  optional string vin12 = 4;
+  // [] [0|255] TO ASCII
+  optional string vin11 = 5;
+  // [] [0|255] TO ASCII
+  optional string vin10 = 6;
+  // [] [0|255] TO ASCII
+  optional string vin09 = 7;
+  // [] [0|255] TO ASCII
+  optional string vin08 = 8;
 }
 
 message Vin_resp3_516 {
 // Report Message
-  // [] [0|255]
-  optional int32 vin16 = 1;
+  // [] [0|255] TO ASCII
+  optional string vin16 = 1;
 }
 
 message Devkit {

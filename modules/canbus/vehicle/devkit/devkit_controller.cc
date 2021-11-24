@@ -280,13 +280,14 @@ Chassis DevkitController::chassis() {
   } else {
     chassis_.set_battery_soc_percentage(0);
   }
-  // 15 battery low soc warn
-  if (chassis_.battery_soc_percentage() < 15) {
+  // 15 give engage_advice based on battery low soc warn
+  if (chassis_.battery_soc_percentage() <= 15) {
+    chassis_.mutable_engage_advice()->set_advice(
+        apollo::common::EngageAdvice::DISALLOW_ENGAGE);
     chassis_.mutable_engage_advice()->set_reason(
-        "Battery soc percentage is lower than 15%, please charge it "
-        "quickly!");
+        "Battery soc percentage is lower than 15%, please charge it quickly!");
   }
-  // 16
+  // 16 sonor list
   if (chassis_detail.devkit().has_ultr_sensor_3_509() &&
       chassis_detail.devkit().has_ultr_sensor_5_511()) {
     chassis_.mutable_surround()->set_sonar01(
@@ -294,39 +295,38 @@ Chassis DevkitController::chassis() {
   } else {
     chassis_.mutable_surround()->set_sonar01(0);
   }
-
   // 17 set vin
-  if (chassis_detail.devkit().has_vin_resp1_514() &&
-      chassis_detail.devkit().has_vin_resp2_515() &&
-      chassis_detail.devkit().has_vin_resp3_516()) {
+  // like LSBN12345678... is prased as vin00(L),vin01(S),vin02(B),...
+  std::string vin = "";
+  if (chassis_detail.devkit().has_vin_resp1_514()) {
     Vin_resp1_514 vin_resp1_514 = chassis_detail.devkit().vin_resp1_514();
-    Vin_resp2_515 vin_resp2_515 = chassis_detail.devkit().vin_resp2_515();
-    Vin_resp3_516 vin_resp3_516 = chassis_detail.devkit().vin_resp3_516();
-    int n[18];
-    n[0] = vin_resp1_514.vin00();
-    n[1] = vin_resp1_514.vin01();
-    n[2] = vin_resp1_514.vin02();
-    n[3] = vin_resp1_514.vin03();
-    n[4] = vin_resp1_514.vin04();
-    n[5] = vin_resp1_514.vin05();
-    n[6] = vin_resp1_514.vin06();
-    n[7] = vin_resp1_514.vin07();
-    n[8] = vin_resp2_515.vin08();
-    n[9] = vin_resp2_515.vin09();
-    n[10] = vin_resp2_515.vin10();
-    n[11] = vin_resp2_515.vin11();
-    n[12] = vin_resp2_515.vin12();
-    n[13] = vin_resp2_515.vin13();
-    n[14] = vin_resp2_515.vin14();
-    n[15] = vin_resp2_515.vin15();
-    n[16] = vin_resp3_516.vin16();
-    char vin[18];
-    memset(&vin, '\0', sizeof(vin));
-    for (int i = 0; i < 17; i++) {
-      vin[i] = static_cast<char>(n[i]);
-    }
-    chassis_.mutable_vehicle_id()->set_vin(vin);
+    vin += vin_resp1_514.vin00();
+    vin += vin_resp1_514.vin01();
+    vin += vin_resp1_514.vin02();
+    vin += vin_resp1_514.vin03();
+    vin += vin_resp1_514.vin04();
+    vin += vin_resp1_514.vin05();
+    vin += vin_resp1_514.vin06();
+    vin += vin_resp1_514.vin07();
   }
+  if (chassis_detail.devkit().has_vin_resp2_515()) {
+    Vin_resp2_515 vin_resp2_515 = chassis_detail.devkit().vin_resp2_515();
+    vin += vin_resp2_515.vin08();
+    vin += vin_resp2_515.vin09();
+    vin += vin_resp2_515.vin10();
+    vin += vin_resp2_515.vin11();
+    vin += vin_resp2_515.vin12();
+    vin += vin_resp2_515.vin13();
+    vin += vin_resp2_515.vin14();
+    vin += vin_resp2_515.vin15();
+  }
+  if (chassis_detail.devkit().has_vin_resp3_516()) {
+    Vin_resp3_516 vin_resp3_516 = chassis_detail.devkit().vin_resp3_516();
+    vin += vin_resp3_516.vin16();
+  }
+
+  chassis_.mutable_vehicle_id()->set_vin(vin);
+
   return chassis_;
 }
 
@@ -349,14 +349,12 @@ ErrorCode DevkitController::EnableAutoMode() {
       Steering_command_102::STEER_EN_CTRL_ENABLE);
   gear_command_103_->set_gear_en_ctrl(Gear_command_103::GEAR_EN_CTRL_ENABLE);
   park_command_104_->set_park_en_ctrl(Park_command_104::PARK_EN_CTRL_ENABLE);
-
   // set AEB enable
   if (FLAGS_enable_aeb) {
     brake_command_101_->set_aeb_en_ctrl(
         Brake_command_101::AEB_EN_CTRL_ENABLE_AEB);
     AINFO << "Set AEB";
   }
-
   can_sender_->Update();
   const int32_t flag =
       CHECK_RESPONSE_STEER_UNIT_FLAG | CHECK_RESPONSE_SPEED_UNIT_FLAG;
