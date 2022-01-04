@@ -14,6 +14,8 @@
  * limitations under the License.
  *****************************************************************************/
 
+#include <string>
+
 #include "modules/canbus/vehicle/devkit/devkit_controller.h"
 
 #include "modules/common/proto/vehicle_signal.pb.h"
@@ -288,15 +290,59 @@ Chassis DevkitController::chassis() {
         "Battery soc percentage is lower than 15%, please charge it quickly!");
   }
   // 16 sonor list
-  if (chassis_detail.devkit().has_ultr_sensor_3_509() &&
-      chassis_detail.devkit().has_ultr_sensor_5_511()) {
+  // to do(ALL):check your vehicle type, confirm your sonar position because of
+  // every vhechle has different sonars assembly.
+  // 08 09 10 11
+  if (chassis_detail.devkit().has_ultr_sensor_1_507()) {
+    chassis_.mutable_surround()->set_sonar08(
+        chassis_detail.devkit().ultr_sensor_1_507().uiuss8_tof_direct());
+    chassis_.mutable_surround()->set_sonar09(
+        chassis_detail.devkit().ultr_sensor_1_507().uiuss9_tof_direct());
+    chassis_.mutable_surround()->set_sonar10(
+        chassis_detail.devkit().ultr_sensor_1_507().uiuss10_tof_direct());
+    chassis_.mutable_surround()->set_sonar11(
+        chassis_detail.devkit().ultr_sensor_1_507().uiuss11_tof_direct());
+  } else {
+    chassis_.mutable_surround()->set_sonar08(0);
+    chassis_.mutable_surround()->set_sonar09(0);
+    chassis_.mutable_surround()->set_sonar10(0);
+    chassis_.mutable_surround()->set_sonar11(0);
+  }
+  // 2 3 4 5
+  if (chassis_detail.devkit().has_ultr_sensor_3_509()) {
+    chassis_.mutable_surround()->set_sonar02(
+        chassis_detail.devkit().ultr_sensor_3_509().uiuss2_tof_direct());
+    chassis_.mutable_surround()->set_sonar03(
+        chassis_detail.devkit().ultr_sensor_3_509().uiuss3_tof_direct());
+    chassis_.mutable_surround()->set_sonar04(
+        chassis_detail.devkit().ultr_sensor_3_509().uiuss4_tof_direct());
+    chassis_.mutable_surround()->set_sonar05(
+        chassis_detail.devkit().ultr_sensor_3_509().uiuss5_tof_direct());
+  } else {
+    chassis_.mutable_surround()->set_sonar02(0);
+    chassis_.mutable_surround()->set_sonar03(0);
+    chassis_.mutable_surround()->set_sonar04(0);
+    chassis_.mutable_surround()->set_sonar05(0);
+  }
+  // 0 1 6 7
+  if (chassis_detail.devkit().has_ultr_sensor_5_511()) {
+    chassis_.mutable_surround()->set_sonar00(
+        chassis_detail.devkit().ultr_sensor_5_511().uiuss0_tof_direct());
     chassis_.mutable_surround()->set_sonar01(
         chassis_detail.devkit().ultr_sensor_5_511().uiuss1_tof_direct());
+    chassis_.mutable_surround()->set_sonar06(
+        chassis_detail.devkit().ultr_sensor_5_511().uiuss6_tof_direct());
+    chassis_.mutable_surround()->set_sonar07(
+        chassis_detail.devkit().ultr_sensor_5_511().uiuss7_tof_direct());
   } else {
+    chassis_.mutable_surround()->set_sonar00(0);
     chassis_.mutable_surround()->set_sonar01(0);
+    chassis_.mutable_surround()->set_sonar06(0);
+    chassis_.mutable_surround()->set_sonar07(0);
   }
   // 17 set vin
-  // like LSBN12345678... is prased as vin00(L),vin01(S),vin02(B),...
+  // vin set 17 bits, like LSBN1234567890123 is prased as
+  // vin17(L),vin16(S),vin15(B),......,vin03(1),vin02(2),vin01(3)
   std::string vin = "";
   if (chassis_detail.devkit().has_vin_resp1_514()) {
     Vin_resp1_514 vin_resp1_514 = chassis_detail.devkit().vin_resp1_514();
@@ -323,12 +369,22 @@ Chassis DevkitController::chassis() {
   if (chassis_detail.devkit().has_vin_resp3_516()) {
     Vin_resp3_516 vin_resp3_516 = chassis_detail.devkit().vin_resp3_516();
     vin += vin_resp3_516.vin16();
-    vin += vin_resp3_516.vin17();
   }
-
+  std::reverse(vin.begin(), vin.end());
   chassis_.mutable_vehicle_id()->set_vin(vin);
 
   return chassis_;
+}
+
+bool DevkitController::VerifyID() {
+  if (!CheckVin()) {
+    AERROR << "Failed to get the vin.";
+    GetVin();
+    return false;
+  } else {
+    ResetVin();
+    return true;
+  }
 }
 
 void DevkitController::Emergency() {
@@ -354,8 +410,9 @@ ErrorCode DevkitController::EnableAutoMode() {
   if (FLAGS_enable_aeb) {
     brake_command_101_->set_aeb_en_ctrl(
         Brake_command_101::AEB_EN_CTRL_ENABLE_AEB);
-    AINFO << "Set AEB";
+    AINFO << "Set AEB enable";
   }
+
   can_sender_->Update();
   const int32_t flag =
       CHECK_RESPONSE_STEER_UNIT_FLAG | CHECK_RESPONSE_SPEED_UNIT_FLAG;
@@ -470,12 +527,13 @@ void DevkitController::Throttle(double pedal) {
 // throttle/brake pedal drive with acceleration/deceleration acc:-7.0 ~ 5.0,
 // unit:m/s^2
 void DevkitController::Acceleration(double acc) {
-  if (driving_mode() != Chassis::COMPLETE_AUTO_DRIVE ||
+  if (driving_mode() != Chassis::COMPLETE_AUTO_DRIVE &&
       driving_mode() != Chassis::AUTO_SPEED_ONLY) {
     AINFO << "The current drive mode does not need to set acceleration.";
     return;
   }
   // None
+  throttle_command_100_->set_throttle_acc(acc);
 }
 
 // devkit default, -30 ~ 00, left:+, right:-
@@ -493,7 +551,7 @@ void DevkitController::Steer(double angle) {
 
   if (!emergency_brake) {
     steering_command_102_->set_steer_angle_target(real_angle)
-        ->set_steer_angle_spd(250);
+        ->set_steer_angle_target(250);
   }
 }
 
@@ -511,7 +569,7 @@ void DevkitController::Steer(double angle, double angle_spd) {
 
   if (!emergency_brake) {
     steering_command_102_->set_steer_angle_target(real_angle)
-        ->set_steer_angle_spd(250);
+        ->set_steer_angle_target(250);
   }
 }
 
@@ -551,10 +609,39 @@ void DevkitController::SetTurningSignal(const ControlCommand& command) {
   } else if (signal == common::VehicleSignal::TURN_RIGHT) {
     vehicle_mode_command_105_->set_turn_light_ctrl(
         Vehicle_mode_command_105::TURN_LIGHT_CTRL_RIGHT_TURNLAMP_ON);
+  } else if (signal == common::VehicleSignal::TURN_HAZARD_WARNING) {
+    vehicle_mode_command_105_->set_turn_light_ctrl(
+        Vehicle_mode_command_105::TURN_LIGHT_CTRL_HAZARD_WARNING_LAMPSTS_ON);
   } else {
     vehicle_mode_command_105_->set_turn_light_ctrl(
         Vehicle_mode_command_105::TURN_LIGHT_CTRL_TURNLAMP_OFF);
   }
+}
+
+bool DevkitController::CheckVin() {
+  if (chassis_.vehicle_id().vin().size() == 17) {
+    AINFO << "Vin check success! Vehicel vin is "
+          << chassis_.vehicle_id().vin();
+    return true;
+  } else {
+    AINFO << "Vin check failed! Current vin size is "
+          << chassis_.vehicle_id().vin().size();
+    return false;
+  }
+}
+
+void DevkitController::GetVin() {
+  vehicle_mode_command_105_->set_vin_req(
+      Vehicle_mode_command_105::VIN_REQ_VIN_REQ_ENABLE);
+  AINFO << "Get vin";
+  can_sender_->Update();
+}
+
+void DevkitController::ResetVin() {
+  vehicle_mode_command_105_->set_vin_req(
+      Vehicle_mode_command_105::VIN_REQ_VIN_REQ_DISABLE);
+  AINFO << "Reset vin";
+  can_sender_->Update();
 }
 
 void DevkitController::ResetProtocol() {
