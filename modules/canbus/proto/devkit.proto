@@ -16,7 +16,7 @@ message Throttle_command_100 {
   optional double throttle_pedal_target = 3;
   // [] [0|1]
   optional Throttle_en_ctrlType throttle_en_ctrl = 4;
-  // [m/s] [0|40.95]
+  // [m/s] [0|10.23]
   optional double speed_target = 5;
 }
 
