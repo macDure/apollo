@@ -38,9 +38,9 @@ lat_controller_conf {
   mass_rl: 520
   mass_rr: 520
   eps: 0.01
-  matrix_q: 0.05
   matrix_q: 0.0
-  matrix_q: 1.0
+  matrix_q: 0.0
+  matrix_q: 0.0
   matrix_q: 0.0
   reverse_matrix_q: 0.05
   reverse_matrix_q: 0.0
